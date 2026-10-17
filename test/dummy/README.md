@@ -9,6 +9,7 @@ This Rails app proves `recording_studio_broadcasts` in a real host. It mounts Re
 - A `:registered_after` filter over `User.all`
 - Email through `recording_studio_notifications_email`, sent from `Broadcasts <broadcasts@example.com>`
 - The Recording Studio default layout and FlatPack assets
+- Turbo, so the broadcasts table replaces its placeholder, plus the admin Stimulus controllers Admin's install generator pins
 
 ## Quick Start
 

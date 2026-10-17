@@ -23,6 +23,8 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "No broadcasts yet."
     assert_includes response.body, "New broadcast"
+    assert_includes response.body, "@hotwired/turbo-rails"
+    assert_includes response.body, "controllers/recording_studio_admin/screen_filters_controller"
   end
 
   test "an admin creates a broadcast, sees who gets it, tests it, and sends it" do
