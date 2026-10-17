@@ -21,11 +21,20 @@ module RecordingStudioBroadcasts
     end
 
     def apply(scope, params)
-      values = (params || {}).to_h.stringify_keys
+      values = present_values(params)
       all.reduce(scope) do |narrowed, filter|
-        value = values[filter.key]
-        value.blank? ? narrowed : filter.apply.call(narrowed, value)
+        values.key?(filter.key) ? filter.apply.call(narrowed, values[filter.key]) : narrowed
       end
+    end
+
+    def unknown_keys(params)
+      present_values(params).keys - all.map(&:key)
+    end
+
+    private
+
+    def present_values(params)
+      (params || {}).to_h.stringify_keys.reject { |_key, value| value.blank? }
     end
   end
 end

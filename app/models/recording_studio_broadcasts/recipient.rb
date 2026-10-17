@@ -3,6 +3,7 @@
 module RecordingStudioBroadcasts
   class Recipient < ActiveRecord::Base
     STATUSES = %w[pending sending sent skipped failed].freeze
+    SKIP_REASONS = %w[preference suppressed cancelled].freeze
 
     self.table_name = "recording_studio_broadcast_recipients"
 
@@ -10,5 +11,6 @@ module RecordingStudioBroadcasts
     belongs_to :recipient, polymorphic: true
 
     validates :status, inclusion: { in: STATUSES }
+    validates :skip_reason, inclusion: { in: SKIP_REASONS }, allow_nil: true
   end
 end

@@ -12,6 +12,10 @@ class CreateRecordingStudioBroadcasts < ActiveRecord::Migration[8.1]
       t.datetime :scheduled_at
       t.string :status, null: false, default: "draft"
       t.datetime :created_at, null: false, default: -> { "CURRENT_TIMESTAMP" }
+
+      t.check_constraint "status IN ('draft', 'scheduled', 'sending', 'completed', 'cancelled')",
+                         name: "rs_broadcasts_status"
+      t.check_constraint "status <> 'scheduled' OR scheduled_at IS NOT NULL", name: "rs_broadcasts_scheduled_at"
     end
   end
 end

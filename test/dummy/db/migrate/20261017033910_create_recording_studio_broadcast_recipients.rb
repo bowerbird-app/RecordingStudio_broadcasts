@@ -13,6 +13,14 @@ class CreateRecordingStudioBroadcastRecipients < ActiveRecord::Migration[8.1]
       t.datetime :claimed_at
 
       t.timestamps
+
+      t.check_constraint "status IN ('pending', 'sending', 'sent', 'skipped', 'failed')",
+                         name: "rs_broadcast_recipients_status"
+      t.check_constraint "skip_reason IS NULL OR skip_reason IN ('preference', 'suppressed', 'cancelled')",
+                         name: "rs_broadcast_recipients_skip_reason"
+      t.check_constraint "status <> 'skipped' OR skip_reason IS NOT NULL", name: "rs_broadcast_recipients_skipped"
+      t.check_constraint "status <> 'sending' OR claimed_at IS NOT NULL", name: "rs_broadcast_recipients_sending"
+      t.check_constraint "status <> 'sent' OR notification_id IS NOT NULL", name: "rs_broadcast_recipients_sent"
     end
 
     add_index :recording_studio_broadcast_recipients, %i[recording_id recipient_type recipient_id],

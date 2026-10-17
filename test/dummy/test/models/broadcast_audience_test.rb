@@ -36,6 +36,12 @@ class BroadcastAudienceTest < ActiveSupport::TestCase
     assert_includes everyone.pluck(:email), "old@example.com"
   end
 
+  test "a saved filter the host no longer registers matches nobody" do
+    recording = create_broadcast(filter_params: { "plan" => "pro" })
+
+    assert_equal({ matching: 0, eligible: 0, excluded: 0 }, RecordingStudioBroadcasts.preview(recording))
+  end
+
   test "snapshot inserts each ready person once" do
     2.times { RecordingStudioBroadcasts::Audience.snapshot!(@recording) }
 

@@ -92,6 +92,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_033910) do
     t.datetime "updated_at", null: false
     t.index ["recording_id", "recipient_type", "recipient_id"], name: "idx_rs_broadcast_recipients_unique", unique: true
     t.index ["recording_id", "status"], name: "idx_rs_broadcast_recipients_status"
+    t.check_constraint "skip_reason IS NULL OR (skip_reason::text = ANY (ARRAY['preference'::character varying, 'suppressed'::character varying, 'cancelled'::character varying]::text[]))", name: "rs_broadcast_recipients_skip_reason"
+    t.check_constraint "status::text <> 'sending'::text OR claimed_at IS NOT NULL", name: "rs_broadcast_recipients_sending"
+    t.check_constraint "status::text <> 'sent'::text OR notification_id IS NOT NULL", name: "rs_broadcast_recipients_sent"
+    t.check_constraint "status::text <> 'skipped'::text OR skip_reason IS NOT NULL", name: "rs_broadcast_recipients_skipped"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'sending'::character varying, 'sent'::character varying, 'skipped'::character varying, 'failed'::character varying]::text[])", name: "rs_broadcast_recipients_status"
   end
 
   create_table "recording_studio_broadcasts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -102,6 +107,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_033910) do
     t.datetime "scheduled_at"
     t.string "status", default: "draft", null: false
     t.datetime "created_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.check_constraint "status::text <> 'scheduled'::text OR scheduled_at IS NOT NULL", name: "rs_broadcasts_scheduled_at"
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'scheduled'::character varying, 'sending'::character varying, 'completed'::character varying, 'cancelled'::character varying]::text[])", name: "rs_broadcasts_status"
   end
 
   create_table "recording_studio_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

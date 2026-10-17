@@ -5,7 +5,12 @@ module RecordingStudioBroadcasts
     module_function
 
     def matching_scope(filter_params)
-      RecordingStudioBroadcasts.filters.apply(recipients.relation.call, filter_params)
+      scope = recipients.relation.call
+      filters = RecordingStudioBroadcasts.filters
+      # A saved filter the host no longer registers must not widen the audience to everyone.
+      return scope.none if filters.unknown_keys(filter_params).any?
+
+      filters.apply(scope, filter_params)
     end
 
     def counts(filter_params)

@@ -27,7 +27,8 @@ class BroadcastCampaignTest < ActiveSupport::TestCase
   test "status follows the transition table" do
     recording = create_broadcast
 
-    Campaign.revise!(recording, actor: nil, status: "scheduled")
+    assert_raises(ActiveRecord::RecordInvalid) { Campaign.revise!(recording, actor: nil, status: "scheduled") }
+    Campaign.revise!(recording, actor: nil, status: "scheduled", scheduled_at: 1.hour.from_now)
     Campaign.revise!(recording, actor: nil, status: "draft")
     error = assert_raises(RecordingStudioBroadcasts::InvalidTransition) do
       Campaign.revise!(recording, actor: nil, status: "completed")

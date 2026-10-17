@@ -4,12 +4,8 @@ module RecordingStudioBroadcasts
   class Engine < ::Rails::Engine
     isolate_namespace RecordingStudioBroadcasts
 
-    initializer "recording_studio_broadcasts.recordable_type", after: :load_config_initializers do
-      RecordingStudio.configuration.recordable_types =
-        RecordingStudio.configuration.recordable_types | ["RecordingStudioBroadcasts::Broadcast"]
-    end
-
     config.to_prepare do
+      RecordingStudio.register_recordable_type("RecordingStudioBroadcasts::Broadcast")
       RecordingStudioNotifications.register_notification_type(
         RecordingStudioBroadcasts::NOTIFICATION_TYPE,
         label: "Product update",
@@ -17,6 +13,7 @@ module RecordingStudioBroadcasts
         default_channels: [:email],
         available_channels: [:email],
         required_channels: [],
+        required_cadence: :individual,
         scope: :global
       )
     end

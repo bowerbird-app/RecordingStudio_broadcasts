@@ -11,5 +11,6 @@ module RecordingStudioBroadcasts
 
     validates :title, :subject, presence: true
     validates :status, inclusion: { in: Campaign::TRANSITIONS.keys }
+    validates :scheduled_at, presence: true, if: -> { status == "scheduled" }
   end
 end
