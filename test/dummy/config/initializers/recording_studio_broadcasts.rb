@@ -10,3 +10,7 @@ RecordingStudioBroadcasts.configure do |config|
     name: ->(user) { user.email }
   )
 end
+
+RecordingStudioBroadcasts.register_filter(:registered_after, label: "Joined after", input: :date) do |scope, value|
+  scope.where(users: { created_at: Time.zone.parse(value.to_s).. })
+end
