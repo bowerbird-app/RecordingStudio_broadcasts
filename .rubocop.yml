@@ -35,6 +35,7 @@ Metrics/AbcSize:
 Lint/EmptyBlock:
   Exclude:
     - 'test/**/*'
+    - 'config/routes.rb'
 
 # Allow nested method definitions in tests (common for testing behavior)
 Lint/NestedMethodDefinition:
