@@ -34,5 +34,21 @@ module RecordingStudioBroadcasts
     def preview(recording)
       Audience.counts(recording.recordable.filter_params)
     end
+
+    def launch(recording, actor:)
+      Campaign.launch(recording, actor:)
+    end
+
+    def schedule(recording, at:, actor:)
+      Campaign.schedule(recording, at:, actor:)
+    end
+
+    def cancel(recording, actor:)
+      Campaign.cancel(recording, actor:)
+    end
+
+    def test_send(recording, actor:)
+      Delivery.test_send(recording, actor:)
+    end
   end
 end
