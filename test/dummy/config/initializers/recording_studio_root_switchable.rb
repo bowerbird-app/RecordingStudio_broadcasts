@@ -19,6 +19,16 @@ RecordingStudioRootSwitchable.configure do |config|
     end
   end
 
+  # Admin authorization requires the current root to be the admin root, so this scope is the default.
+  config.scope :admin do |scope|
+    scope.label = "Admin"
+    scope.description = "The admin root, for people with admin access."
+    scope.available_roots = lambda do |actor:, **|
+      RecordingStudioAccessible.root_recordings_for(actor: actor, minimum_role: :view)
+                               .select { |recording| recording.recordable_type == "AdminRoot" }
+    end
+  end
+
   config.scope :all_workspaces do |scope|
     scope.label = "All workspaces"
     scope.description = "Every workspace root in the dummy app."

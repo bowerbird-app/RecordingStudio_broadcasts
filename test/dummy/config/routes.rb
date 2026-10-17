@@ -5,6 +5,8 @@ Rails.application.routes.draw do
   mount RecordingStudio::Engine, at: "/recording_studio"
   mount RecordingStudioRootSwitchable::Engine, at: "/recording_studio_root_switchable"
   mount RecordingStudioNotifications::Engine, at: "/notifications"
+  mount RecordingStudioAccessible::Engine, at: "/admin/access"
+  recording_studio_admin_for :admin, at: "/admin", root_section: :broadcasts
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
@@ -16,5 +18,5 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  root to: redirect("/recording_studio_root_switchable/v1/root_switch?scope=all_workspaces")
+  root to: redirect("/admin")
 end

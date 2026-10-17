@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioTemplateTest < ActiveSupport::TestCase
   test "dummy app loads root switchable config and controller support" do
-    assert_equal [ "all_workspaces" ], RecordingStudioRootSwitchable.configuration.scopes.keys
+    assert_equal [ "admin", "all_workspaces" ], RecordingStudioRootSwitchable.configuration.scopes.keys
     assert_equal :application_layout, RecordingStudioRootSwitchable.configuration.layout
     assert_includes ApplicationController.ancestors, RecordingStudio::RootSwitchable::ControllerSupport
     assert_includes ApplicationController.ancestors, RecordingStudio::UsesDefaultLayout
@@ -53,6 +53,12 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
     assert_equal folder_recording, page_recording.parent_recording
     assert_equal root_recording, page_recording.root_recording
     assert_equal 3, Workspace.count
+
+    admin_root_recording = RecordingStudio::Recording.find_by!(recordable: AdminRoot.find_by!(name: "Admin"))
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: User.find_by!(email: "admin@admin.com"),
+                                                           recording: admin_root_recording)
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: User.find_by!(email: "viewer@example.com"),
+                                                          recording: admin_root_recording)
 
     assert_no_difference -> { User.count } do
       assert_no_difference -> { RecordingStudio::Recording.count } do
