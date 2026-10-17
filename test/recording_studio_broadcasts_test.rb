@@ -18,7 +18,7 @@ class RecordingStudioBroadcastsTest < Minitest::Test
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.18"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_admin", ">= 2.3", "< 2.4"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications", ">= 0.10.0", "< 0.11"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications_email", ">= 0.3.14", "< 0.4"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications_email", ">= 0.3.15", "< 0.4"'
     assert_includes gemspec, 'spec.add_dependency "flat_pack", "~> 0.1.207"'
   end
 
@@ -52,7 +52,7 @@ class RecordingStudioBroadcastsTest < Minitest::Test
       "RecordingStudio_accessible" => "v0.20.0",
       "RecordingStudio_admin" => "v2.3.3",
       "RecordingStudio_notifications" => "v0.10.0",
-      "RecordingStudio_notifications_email" => "v0.3.14",
+      "RecordingStudio_notifications_email" => "v0.3.15",
       "flatpack" => "v0.1.251",
       "RecordingStudio_metrics" => "v0.3.1",
       "RecordingStudio_root_switchable" => "v0.9.4",

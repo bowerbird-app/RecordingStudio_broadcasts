@@ -30,13 +30,6 @@ module RecordingStudioBroadcasts
       notify(recording, actor, "broadcast/#{recording.id}/test/#{actor.class.name}/#{actor.id}")
     end
 
-    def email_body(broadcast, recipient)
-      url = RecordingStudioNotifications.unsubscribe_url(
-        recipient:, notification_type: NOTIFICATION_TYPE, channel: :email
-      )
-      [broadcast.body.presence, "Unsubscribe: #{url}"].compact.join("\n\n")
-    end
-
     def claim_batch(recording_id)
       ids = Recipient.where(recording_id:).claimable.order(:id).lock("FOR UPDATE SKIP LOCKED")
                      .limit(RecordingStudioBroadcasts.configuration.batch_size).pluck(:id)
@@ -57,7 +50,7 @@ module RecordingStudioBroadcasts
       broadcast = recording.recordable
       RecordingStudioNotifications.notify(
         notification_type: NOTIFICATION_TYPE, recipient:, idempotency_key:,
-        title: broadcast.subject, body: email_body(broadcast, recipient),
+        title: broadcast.subject, body: broadcast.body,
         channels: [:email], inbox: false, deliver_later: false
       )
     end

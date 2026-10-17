@@ -13,7 +13,7 @@ gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.20.0"
 gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.3"
 gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.10.0"
-gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.3.14"
+gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.3.15"
 gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.1.0"
 ```
 
@@ -84,11 +84,7 @@ RecordingStudioBroadcasts.schedule(recording, at: 1.day.from_now, actor: user)
 RecordingStudioBroadcasts.cancel(recording, actor: user)
 ```
 
-Launch copies the ready audience into a recipients table, then a job sends in batches of `batch_size`. Each person gets one email per broadcast, even if the job retries. People who turned off product updates, or whose address is suppressed, are skipped and counted.
-
-## The List-Unsubscribe gap
-
-Every email ends with an `Unsubscribe:` link from `RecordingStudioNotifications.unsubscribe_url`. Messages do not carry `List-Unsubscribe` or `List-Unsubscribe-Post` headers. Notifications can build those headers with `list_unsubscribe_headers`, but the email channel's mailer sets only its own headers and `deliver` takes no extra ones. Adding the headers needs a change in `recording_studio_notifications_email`, not a custom mailer here.
+Launch copies the ready audience into a recipients table, then a job sends in batches of `batch_size`. Each person gets one email per broadcast, even if the job retries. People who turned off product updates, or whose address is suppressed, are skipped and counted. The unsubscribe link and `List-Unsubscribe` headers come from the email channel.
 
 ## Development
 

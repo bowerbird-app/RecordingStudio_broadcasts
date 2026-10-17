@@ -13,15 +13,19 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
     @recording = create_broadcast
   end
 
-  test "launch emails each ready person once with an unsubscribe line and completes" do
+  test "launch emails each ready person once and completes" do
     assert_emails 2 do
       perform_enqueued_jobs { RecordingStudioBroadcasts.launch(@recording, actor: @ann) }
     end
 
     mail = ActionMailer::Base.deliveries.find { |message| message.to == [ "bob@example.com" ] }
+    text = mail.text_part.decoded
     assert_equal "What's new in October", mail.subject
-    assert_includes mail.text_part.decoded, "We shipped broadcasts."
-    assert_match %r{Unsubscribe: http://example.com/notifications/unsubscribe/product_update/email\?token=}, mail.text_part.decoded
+    assert_includes text, "We shipped broadcasts."
+    assert_equal 1, text.scan("Unsubscribe:").size
+    assert_match %r{\A<http://example.com/notifications/unsubscribe/product_update/email\?token=.+>\z},
+                 mail["List-Unsubscribe"].value
+    assert_equal "List-Unsubscribe=One-Click", mail["List-Unsubscribe-Post"].value
     assert_equal %w[sent sent], Recipient.where(recording_id: @recording.id).pluck(:status)
     assert_equal "completed", broadcast_status(@recording)
   end
