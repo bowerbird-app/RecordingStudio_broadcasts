@@ -1,0 +1,37 @@
+<%= form_with url: url, method: method do %>
+  <%= render FlatPack::Grid::Component.new(cols: 1, gap: :md) do %>
+    <%= render FlatPack::TextInput::Component.new(
+      name: "broadcast[title]",
+      label: "Title",
+      value: broadcast.title,
+      required: true,
+      help_text: "Only admins see this.",
+      error: broadcast_field_error(broadcast, :title)
+    ) %>
+    <%= render FlatPack::TextInput::Component.new(
+      name: "broadcast[subject]",
+      label: "Subject",
+      value: broadcast.subject,
+      required: true,
+      error: broadcast_field_error(broadcast, :subject)
+    ) %>
+    <%= render FlatPack::TextArea::Component.new(
+      name: "broadcast[body]",
+      label: "Message",
+      value: broadcast.body,
+      rows: 8,
+      rich_text: false
+    ) %>
+    <% if RecordingStudioBroadcasts.filters.all.any? %>
+      <%= render FlatPack::PageTitle::Component.new(
+        title: "Who gets it",
+        subtitle: "Leave a field blank to include everyone.",
+        variant: :h2
+      ) %>
+      <% RecordingStudioBroadcasts.filters.all.each do |filter| %>
+        <%= render broadcast_filter_input(filter, broadcast.filter_params.to_h[filter.key]) %>
+      <% end %>
+    <% end %>
+    <%= render FlatPack::Button::Component.new(text: "Save", type: "submit", style: :primary) %>
+  <% end %>
+<% end %>

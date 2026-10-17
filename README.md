@@ -60,11 +60,19 @@ RecordingStudioBroadcasts.register_filter(:registered_after, label: "Joined afte
 end
 ```
 
-`relation` returns the people a broadcast can reach. `email` and `name` take a method name or a proc. Each filter gets the current scope and the admin's value and returns a narrower scope. Filters combine with AND. A blank value skips its filter. Registering the same key again replaces it, so reloading code is safe.
+`relation` returns the people a broadcast can reach. `email` and `name` take a method name or a proc. Each filter gets the current scope and the admin's value and returns a narrower scope. Filters combine with AND. A blank value skips its filter. Registering the same key again replaces it, so reloading code is safe. A saved broadcast whose filter key is no longer registered matches nobody. It never widens to everyone.
+
+Broadcasts counts people by `email`, but the email channel looks the address up on its own. It uses `recipient.email` by default. If your address lives elsewhere, register the same lookup with the email channel so both agree:
+
+```ruby
+RecordingStudioNotificationsEmail.config.recipients.register(User) { |user| user.contact_email }
+```
 
 ## Send
 
-The Broadcasts screen lists every broadcast. The detail page shows who gets it (Matching, Ready, Left out), the filters, and how sending is going. View access can open both. Sending, scheduling, cancelling, editing, and test sends need admin access.
+The Broadcasts screen lists every broadcast. The detail page shows who gets it (Matching, Ready, Left out), the filters, and how sending is going. View access can open both. Sending, scheduling, cancelling, editing, test sends, and deleting need admin access. Only a draft can be deleted. A sent or cancelled broadcast stays as a record.
+
+Each admin gets one test email per broadcast. The test uses a fixed idempotency key, so asking again sends nothing and the page says so.
 
 The same commands are available in Ruby:
 

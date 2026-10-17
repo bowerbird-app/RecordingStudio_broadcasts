@@ -6,3 +6,4 @@ Next steps:
 2. Set `config.from` in config/initializers/recording_studio_notifications_email.rb.
 3. Copy the migrations with `bin/rails generate recording_studio_broadcasts:migrations`.
 4. Apply them with `bin/rails db:migrate`.
+5. If your admin root lists its sections, make sure the block includes `section :broadcasts`.

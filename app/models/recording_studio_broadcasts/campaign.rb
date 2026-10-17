@@ -11,11 +11,47 @@ module RecordingStudioBroadcasts
     }.freeze
     EDITABLE = %w[draft scheduled].freeze
     CONTENT = %i[title subject body filter_params].freeze
+    STATUS_LABELS = {
+      "draft" => "Draft",
+      "scheduled" => "Scheduled",
+      "sending" => "Sending",
+      "completed" => "Sent",
+      "cancelled" => "Cancelled"
+    }.freeze
 
     module_function
 
+    def recordings(parent_recording)
+      parent_recording.recordings_query(type: Broadcast)
+    end
+
+    def actions_for(status)
+      editable = EDITABLE.include?(status)
+      {
+        update: editable,
+        schedule: editable,
+        test_send: editable,
+        send: TRANSITIONS.fetch(status).include?("sending"),
+        cancel: TRANSITIONS.fetch(status).include?("cancelled"),
+        delete: status == "draft"
+      }.select { |_action, offered| offered }.keys
+    end
+
     def create(parent_recording, actor:, **attributes)
       parent_recording.record(Broadcast, actor:) { |broadcast| broadcast.assign_attributes(attributes.slice(*CONTENT)) }
+    end
+
+    def destroy(recording, actor:)
+      recording.with_lock do
+        status = recording.recordable.status
+        raise InvalidTransition, "A #{status} broadcast cannot be deleted" unless actions_for(status).include?(:delete)
+
+        snapshot_ids = recording.recordables.map(&:id)
+        parent = recording.parent_recording
+        parent.log_event(parent, action: "deleted", actor:, metadata: { broadcast_recording_id: recording.id })
+        recording.destroy!
+        Broadcast.where(id: snapshot_ids).delete_all
+      end
     end
 
     def update(recording, actor:, **attributes)
@@ -37,7 +73,7 @@ module RecordingStudioBroadcasts
     end
 
     def schedule(recording, at:, actor:)
-      scheduled_at = at.utc
+      scheduled_at = at&.utc
       revise!(recording, actor:, status: "scheduled", scheduled_at:)
       ScheduledBroadcastJob.set(wait_until: scheduled_at).perform_later(recording, scheduled_at.iso8601, actor)
       recording

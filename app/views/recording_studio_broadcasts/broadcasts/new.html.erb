@@ -1,0 +1,4 @@
+<%= render layout: "recording_studio_admin/shared/page_shell" do %>
+  <%= render "header", title: "New broadcast" %>
+  <%= render "form", broadcast: @broadcast, url: broadcasts_path, method: :post %>
+<% end %>

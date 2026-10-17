@@ -3,6 +3,7 @@
 require "recording_studio"
 require "recording_studio_notifications"
 require "recording_studio_notifications_email"
+require "recording_studio_admin"
 require "recording_studio_broadcasts/version"
 require "recording_studio_broadcasts/configuration"
 require "recording_studio_broadcasts/filter_registry"
@@ -15,6 +16,8 @@ module RecordingStudioBroadcasts
   class InvalidTransition < Error; end
 
   class << self
+    attr_accessor :admin_routes_appended
+
     def configuration
       @configuration ||= Configuration.new
     end

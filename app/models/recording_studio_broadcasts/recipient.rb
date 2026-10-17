@@ -3,6 +3,13 @@
 module RecordingStudioBroadcasts
   class Recipient < ActiveRecord::Base
     STATUSES = %w[pending sending sent skipped failed].freeze
+    STATUS_LABELS = {
+      "pending" => "Waiting",
+      "sending" => "Sending",
+      "sent" => "Sent",
+      "skipped" => "Skipped",
+      "failed" => "Failed"
+    }.freeze
     SKIP_REASONS = %w[preference suppressed cancelled].freeze
     STALE_CLAIM_AFTER = 15.minutes
 

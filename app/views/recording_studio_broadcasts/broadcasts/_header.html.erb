@@ -1,0 +1,12 @@
+<% recording_studio_page_nav(
+     title: title,
+     page_nav_anchor_url: page_nav_anchor_url(default: recording_studio_admin_context.admin_screen_path("broadcasts"))
+   ) %>
+<%= render "recording_studio_admin/shared/page_nav" unless recording_studio_admin_default_layout? %>
+<% if notice.present? %>
+  <%= render FlatPack::Alert::Component.new(description: notice, style: :success) %>
+<% end %>
+<% if alert.present? %>
+  <%= render FlatPack::Alert::Component.new(description: alert, style: :danger) %>
+<% end %>
+<%= render FlatPack::PageTitle::Component.new(title: title, subtitle: local_assigns[:subtitle]) %>
