@@ -36,6 +36,7 @@ Rails.application.configure do
 
   # Broadcasts write to tmp/mails so the dummy never reaches a real mail server.
   config.action_mailer.delivery_method = :file
+  config.action_mailer.file_settings = { location: Rails.root.join("tmp/mails") }
 
   # Make template changes take effect immediately.
   config.action_mailer.perform_caching = false
