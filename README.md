@@ -65,7 +65,7 @@ end
 Broadcasts counts people by `email`, but the email channel looks the address up on its own. It uses `recipient.email` by default. If your address lives elsewhere, register the same lookup with the email channel so both agree:
 
 ```ruby
-RecordingStudioNotificationsEmail.config.recipients.register(User) { |user| user.contact_email }
+RecordingStudioNotificationsEmail.config.recipients.register("User", ->(user) { user.contact_email })
 ```
 
 ## Send
