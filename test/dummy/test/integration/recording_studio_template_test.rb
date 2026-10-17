@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioTemplateTest < ActiveSupport::TestCase
   test "dummy app loads root switchable config and controller support" do
-    assert_equal [ "all_workspaces" ], RecordingStudioRootSwitchable.configuration.scopes.keys
+    assert_equal [ "admin", "all_workspaces" ], RecordingStudioRootSwitchable.configuration.scopes.keys
     assert_equal :application_layout, RecordingStudioRootSwitchable.configuration.layout
     assert_includes ApplicationController.ancestors, RecordingStudio::RootSwitchable::ControllerSupport
     assert_includes ApplicationController.ancestors, RecordingStudio::UsesDefaultLayout
@@ -12,7 +12,8 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
 
   test "dummy app validates recordable declarations" do
     assert RecordingStudio.validate_recordable_declarations!
-    assert_equal [ "Workspace" ], RecordingStudio.root_recordable_types
+    assert_equal [ "AdminRoot", "Workspace" ], RecordingStudio.root_recordable_types
+    assert_includes RecordingStudio.configuration.recordable_types, "RecordingStudioBroadcasts::Broadcast"
     assert_equal [ "Workspace", "Folder" ], RecordingStudio.allowed_parent_types_for("Page")
   end
 
@@ -53,6 +54,12 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
     assert_equal root_recording, page_recording.root_recording
     assert_equal 3, Workspace.count
 
+    admin_root_recording = RecordingStudio::Recording.find_by!(recordable: AdminRoot.find_by!(name: "Admin"))
+    assert_equal :admin, RecordingStudioAccessible.role_for(actor: User.find_by!(email: "admin@admin.com"),
+                                                           recording: admin_root_recording)
+    assert_equal :view, RecordingStudioAccessible.role_for(actor: User.find_by!(email: "viewer@example.com"),
+                                                          recording: admin_root_recording)
+
     assert_no_difference -> { User.count } do
       assert_no_difference -> { RecordingStudio::Recording.count } do
         load Rails.root.join("db/seeds.rb").to_s
@@ -63,23 +70,9 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
     Current.actor = nil
   end
 
-  test "workspace opts into accessible and the example mixin without enabling them globally" do
-    workspace_source = File.read(Rails.root.join("app/models/workspace.rb"))
-    example_source = File.read(GemTemplate::Engine.root.join("lib/gem_template/capabilities/example.rb"))
-
-    assert_includes workspace_source, "include RecordingStudio::Capabilities::Example.to(label: \"dummy workspace\")"
-    assert_includes example_source, "RecordingStudio::Capabilities.include_for(:example, **)"
-    refute_includes example_source, "enable_capability"
-    refute_includes example_source, "set_capability_options"
-
+  test "workspace opts into accessible without enabling it globally" do
     assert RecordingStudio.capability_enabled?(:accessible, for: Workspace)
-    assert RecordingStudio.capability_enabled?(:example, for: Workspace)
-    assert_equal({ label: "dummy workspace" }, RecordingStudio.capability_options(:example, for: Workspace))
     refute RecordingStudio.capability_enabled?(:accessible, for: Folder)
     refute RecordingStudio.capability_enabled?(:accessible, for: Page)
-    refute RecordingStudio.capability_enabled?(:example, for: Folder)
-    refute RecordingStudio.capability_enabled?(:example, for: Page)
-    assert_equal [ "Workspace" ], RecordingStudio.configuration.enabled_recordable_types_for(:example)
-    assert_includes ApplicationController.ancestors, RecordingStudio::UsesDefaultLayout
   end
 end

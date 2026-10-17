@@ -54,3 +54,7 @@ pkg/
 
 # Rename script state
 .rename_state.yml
+
+# Coverage
+coverage/
+test/dummy/coverage/

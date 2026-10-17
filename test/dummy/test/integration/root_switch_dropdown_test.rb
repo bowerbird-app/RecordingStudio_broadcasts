@@ -18,24 +18,6 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "fixed inset-0"
   end
 
-  test "home page renders the root switch dropdown trigger" do
-    user = User.find_or_create_by!(email: "root-switch-test@example.com") do |record|
-      record.password = "Password123!"
-      record.password_confirmation = "Password123!"
-    end
-
-    sign_in user
-
-    workspace = Workspace.create!(name: "Dropdown Workspace")
-    RecordingStudio.root_recording_for(workspace)
-
-    get root_path
-
-    assert_response :success
-    assert_includes response.body, workspace.name
-    assert_select "body[data-recording-studio-default-layout='true']", count: 1
-  end
-
   test "root switch page renders with the host default layout" do
     user = User.find_or_create_by!(email: "root-switch-page-test@example.com") do |record|
       record.password = "Password123!"
@@ -71,11 +53,11 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
       scope: "all_workspaces",
       root_switch: {
         root_recording_id: target_root_recording.id,
-        return_to: "/docs/install"
+        return_to: "/up"
       }
     }
 
-    assert_redirected_to "/docs/install"
+    assert_redirected_to "/up"
   end
 
   test "switching falls back to home when return_to is not a valid internal route" do

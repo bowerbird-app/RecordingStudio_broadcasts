@@ -1,173 +1,101 @@
-# GemTemplate
+# Recording Studio Broadcasts
 
-Internal template for building Rails engine addons on top of Recording Studio 4.x.
+`recording_studio_broadcasts` adds a **Broadcasts** section to Recording Studio Admin. An admin writes a product update, picks who gets it with filters the host app defines, sees how many people it will reach, and sends it by email now or at a set time.
 
-## What's Included
+Each broadcast is a Recording under the admin root, so edits and status changes keep Recording Studio history. Sending goes through `recording_studio_notifications` and its email channel, so notification preferences, idempotency, and address suppressions apply to every message.
 
-- **Recording Studio** 4.x gem pinned and configured
-- **Devise** authentication with a pre-seeded admin user
-- **Workspace**, **Folder**, and **Page** recordables seeded into the dummy host app
-- **FlatPack** UI component library for all views
-- **Dummy app** (`test/dummy/`) with a FlatPack sign-in screen, a home page on Recording Studio's default layout, mounted Recording Studio routes, and FlatPack's built-in rounded theme
+## Install
 
-Authenticated dummy pages use Recording Studio's shared default layout (`RecordingStudio::UsesDefaultLayout`) plus FlatPack CSS and JS. Devise keeps its own sign-in layout. Dummy `/docs/*` pages stay in the dummy app as a host-app sandbox; they are not the product README.
-
-## Quick Start
-
-### Cursor Cloud Agent (Recommended)
-
-A Cloud Agent boots this repo into a ready-to-use dev environment with no manual steps. The setup lives in `.cursor/`:
-
-- `install.sh` provisions Ruby (pinned by `.ruby-version`), PostgreSQL 16, all gems, the seeded dummy database, and compiled CSS at build time, then fetches Recording Studio skills.
-- `start.sh` starts PostgreSQL on every boot.
-- `environment.json` runs the `rails-server` and `tailwind-watch` terminals and exposes port 3000.
-
-Open port 3000 and sign in at `/users/sign_in`. No environment variables are required — the dummy app's `database.yml` defaults match the provisioned PostgreSQL cluster.
-
-### GitHub Codespaces
-
-1. Click **Code** → **Codespaces** → **Create codespace**
-2. Wait for setup to complete
-3. Run:
-   ```bash
-   cd test/dummy
-   bin/rails db:setup
-   bin/dev
-   ```
-4. Open port 3000 — you'll land on the dummy app home page and can sign in at `/users/sign_in`
-
-The dummy app is intended as a host-app validation surface for authentication, FlatPack rendering, Tailwind source scanning, and Recording Studio route wiring.
-
-Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key.
-
-### Login Credentials
-
-| Field    | Value             |
-|----------|-------------------|
-| Email    | admin@admin.com   |
-| Password | Password          |
-
-The login form is prefilled with these credentials for fast access.
-
-### Useful Routes
-
-- `/` — dummy app home page
-- `/users/sign_in` — Devise sign-in page
-- `/recording_studio` — redirect to `/` while the mounted Recording Studio engine remains data/API-focused
-- `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` — dummy-only starter pages
-
-The home page in `test/dummy/app/views/home/index.html.erb` is a starting point for a minimal demo of the gem's primary behavior. Keep deeper explanations on the dummy docs pages, not in this README.
-
-## Architecture
-
-### Root Recording Pattern
-
-This template follows Recording Studio's root recording pattern:
-
-- **Workspace** is the top-level recordable
-- **Folder** and **Page** demonstrate nested recordables under the workspace root
-- Each configured recordable declares `recording_studio_recordable(...)`; strict declaration validation stays enabled
-- A root `RecordingStudio::Recording` wraps the Workspace
-- `Current.actor` is set from `current_user` (Devise) in `ApplicationController`
-
-### Extending Recording Studio
-
-To add new recordable types:
-
-1. Create your model (e.g., `Page`, `Comment`)
-2. Register it in `config/initializers/recording_studio.rb`:
-   ```ruby
-   RecordingStudio.configure do |config|
-     config.recordable_types = ["Workspace", "YourNewType"]
-   end
-   ```
-3. Declare whether the model can be a root and which parents may contain it:
-   ```ruby
-   class YourNewType < ApplicationRecord
-     recording_studio_recordable label: "Your new type",
-                                 root: false,
-                                 allowed_parent_types: ["Workspace", "Folder"]
-   end
-   ```
-4. Validate declarations and create recordings under the root:
-   ```ruby
-   RecordingStudio.validate_recordable_declarations!
-   root_recording = RecordingStudio.root_recording_for(workspace)
-   root_recording.record(YourNewType) do |record|
-     record.title = "Example"
-   end
-   ```
-
-### Recordable Declarations
-
-Every configured ActiveRecord recordable type must declare its hierarchy rules. Declarations are required; they are not version-specific.
-
-- `Workspace` declares `root: true`
-- `Folder` and `Page` declare `root: false, allowed_parent_types: ["Workspace", "Folder"]`
-- `config.require_recordable_declarations = true` remains enabled in the dummy app initializer
-
-Useful console checks:
+These gems are not on RubyGems. Pin them from GitHub in the host `Gemfile`:
 
 ```ruby
-RecordingStudio.validate_recordable_declarations!
-RecordingStudio.root_recordable_types
-RecordingStudio.allowed_parent_types_for("Page")
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"
+gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.20.0"
+gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.3"
+gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.10.0"
+gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.3.15"
+gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.1.0"
 ```
 
-### Capabilities
+Install Admin, Notifications, and the email channel first, following their READMEs. Then:
 
-Capability mixins are opt-in. Installing this gem does not enable mixins on host types.
+```bash
+bin/rails generate recording_studio_broadcasts:install
+bin/rails generate recording_studio_broadcasts:migrations
+bin/rails db:migrate
+```
 
-The dummy Workspace enables Accessible because that addon is bundled:
+The install generator writes `config/initializers/recording_studio_broadcasts.rb`. If your admin root model lists its sections with `recording_studio_admin_sections`, the generator adds `section :broadcasts` to that block. Admin 2.3 cannot add a section to a host list on its own. If you add the line by hand, it is one line:
 
 ```ruby
-RecordingStudio.enable_capability(:accessible, on: Workspace)
+recording_studio_admin_sections do
+  section :root
+  section :broadcasts
+end
 ```
 
-The template also ships one example mixin that uses core 4.2.0's `include_for` factory:
+Set the sender on the email channel. Broadcasts does not keep its own copy:
 
 ```ruby
-include RecordingStudio::Capabilities::Example.to(label: "dummy workspace")
+RecordingStudioNotificationsEmail.configure do |config|
+  config.from = "Product updates <updates@example.com>"
+end
 ```
 
-`.to` wraps `RecordingStudio::Capabilities.include_for`. It does not add a fourth verb and it does not call `enable_capability` / `set_capability_options` itself. Folder and Page stay without the example mixin.
+## Configure recipients and filters
 
-Use core `RecordingStudio::Hooks` and `RecordingStudio::Services::BaseService`. Do not copy those classes into a new addon.
+```ruby
+RecordingStudioBroadcasts.configure do |config|
+  config.batch_size = 100
+  config.admin_root_type = "AdminRoot"
+  config.recipients(
+    relation: -> { User.all },
+    email: :email,
+    name: ->(user) { user.email }
+  )
+end
 
-### FlatPack UI Components
+RecordingStudioBroadcasts.register_filter(:registered_after, label: "Joined after", input: :date) do |scope, value|
+  scope.where(users: { created_at: Time.zone.parse(value.to_s).. })
+end
+```
 
-All views use FlatPack ViewComponents. Available components include:
+`relation` returns the people a broadcast can reach. `email` and `name` take a method name or a proc. Each filter gets the current scope and the admin's value and returns a narrower scope. Filters combine with AND. A blank value skips its filter. Registering the same key again replaces it, so reloading code is safe. A saved broadcast whose filter key is no longer registered matches nobody. It never widens to everyone.
 
-- `FlatPack::Button::Component` — Buttons (`:primary`, `:secondary`, `:ghost`)
-- `FlatPack::Card::Component` — Cards (`:default`, `:elevated`, `:outlined`)
-- `FlatPack::Alert::Component` — Alerts (`:success`, `:error`, `:warning`, `:info`)
-- `FlatPack::Badge::Component` — Status badges
-- `FlatPack::Table::Component` — Data tables
-- `FlatPack::TextInput::Component`, `EmailInput`, `PasswordInput` — Form inputs
-- `FlatPack::PageNav::Component` — Default-layout page navigation
-- `FlatPack::PageTitle::Component` — Page titles
+Broadcasts counts people by `email`, but the email channel looks the address up on its own. It uses `recipient.email` by default. If your address lives elsewhere, register the same lookup with the email channel so both agree:
 
-Use the live FlatPack demo app at [flatpack.bowerbird.io](https://flatpack.bowerbird.io/) as the approved UI reference for current shared patterns. Its component table is the fastest way to discover available FlatPack components before introducing new custom UI.
+```ruby
+RecordingStudioNotificationsEmail.config.recipients.register("User", ->(user) { user.contact_email })
+```
 
-See the [FlatPack README](https://github.com/bowerbird-app/flatpack) for full documentation.
+## Send
 
-## Tech Stack
+The Broadcasts screen lists every broadcast. The detail page shows who gets it (Matching, Ready, Left out), the filters, and how sending is going. View access can open both. Sending, scheduling, cancelling, editing, test sends, and deleting need admin access. Only a draft can be deleted. A sent or cancelled broadcast stays as a record.
 
-| Component       | Version |
-|-----------------|---------|
-| Ruby            | 3.3+    |
-| Rails           | 8.1+    |
-| PostgreSQL      | 16      |
-| TailwindCSS     | 4       |
-| RecordingStudio | 4.x (`~> 4.2` in the gemspec; dummy GitHub tag `v4.7.0`) |
-| Accessible      | dummy GitHub tag `v0.18.0` |
-| Trashable       | dummy GitHub tag `v0.11.0` (`require: false`; query-only via Accessible) |
-| Root Switchable | dummy GitHub tag `v0.9.0` |
-| FlatPack        | dummy GitHub tag `v0.1.196` |
-| Devise          | latest  |
+Each admin gets one test email per broadcast. The test uses a fixed idempotency key, so asking again sends nothing and the page says so.
 
-The dummy Gemfile keeps `github:` sources so Bundler can fetch those gems. The gemspec still pins `recording_studio` to `~> 4.2` so copied addons declare the core dependency even when GitHub is the fetch source.
+The same commands are available in Ruby:
 
-## Documentation
+```ruby
+RecordingStudioBroadcasts.preview(recording)            # => { matching:, eligible:, excluded: }
+RecordingStudioBroadcasts.test_send(recording, actor: user)
+RecordingStudioBroadcasts.launch(recording, actor: user)
+RecordingStudioBroadcasts.schedule(recording, at: 1.day.from_now, actor: user)
+RecordingStudioBroadcasts.cancel(recording, actor: user)
+```
 
-The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; this README and the dummy app are the source of truth for the Recording Studio addon workflow.
+Launch copies the ready audience into a recipients table, then a job sends in batches of `batch_size`. Each person gets one email per broadcast, even if the job retries. People who turned off product updates, or whose address is suppressed, are skipped and counted. The unsubscribe link and `List-Unsubscribe` headers come from the email channel.
+
+## Development
+
+```bash
+bundle install
+bundle exec rake test:all
+bundle exec rubocop
+```
+
+The dummy app in `test/dummy` signs in as `admin@admin.com` / `Password` (admin) or `viewer@example.com` / `Password` (view only).
+
+## License
+
+MIT

@@ -25,16 +25,19 @@ Metrics/MethodLength:
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'db/migrate/**/*'
 
 Metrics/AbcSize:
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'db/migrate/**/*'
 
 # Allow empty blocks in tests (common for stubs/mocks)
 Lint/EmptyBlock:
   Exclude:
     - 'test/**/*'
+    - 'config/routes.rb'
 
 # Allow nested method definitions in tests (common for testing behavior)
 Lint/NestedMethodDefinition:
