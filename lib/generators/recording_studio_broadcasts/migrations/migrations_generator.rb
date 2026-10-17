@@ -5,76 +5,28 @@ require "rails/generators/active_record"
 
 module RecordingStudioBroadcasts
   module Generators
-    # Generator to install RecordingStudioBroadcasts migrations into the host application.
-    #
-    # Usage:
-    #   rails generate recording_studio_broadcasts:migrations
-    #
-    # Options:
-    #   --skip-existing  Skip migrations that already exist in the host app
-    #
     class MigrationsGenerator < Rails::Generators::Base
       include ActiveRecord::Generators::Migration
 
-      source_root File.expand_path("../../../..", __dir__)
+      source_root File.expand_path("../../../../db/migrate", __dir__)
 
       desc "Copy RecordingStudioBroadcasts migrations to your application"
 
-      class_option :skip_existing, type: :boolean, default: true,
-                                   desc: "Skip migrations that already exist (based on name, ignoring timestamp)"
-
       def copy_migrations
-        migrations_dir = File.join(self.class.source_root, "db", "migrate")
-
-        unless File.directory?(migrations_dir)
-          say "No migrations found in RecordingStudioBroadcasts engine.", :yellow
-          return
-        end
-
-        migration_files = Dir.glob(File.join(migrations_dir, "*.rb"))
-
-        if migration_files.empty?
-          say "No migrations found in RecordingStudioBroadcasts engine.", :yellow
-          return
-        end
-
-        say "Found #{migration_files.size} migration(s) to install:", :green
-
-        migration_files.each do |source_path|
-          filename = File.basename(source_path)
-          # Extract migration name without timestamp (e.g., "create_recording_studio_broadcasts_pages.rb")
-          migration_name = filename.sub(/^\d+_/, "")
-
-          if options[:skip_existing] && migration_exists?(migration_name)
-            say "  skip  #{migration_name} (already exists)", :yellow
-            next
+        Dir[File.join(self.class.source_root, "*.rb")].each do |source|
+          name = File.basename(source).sub(/\A\d+_/, "")
+          if Dir[File.join(migrate_dir, "*_#{name}")].any?
+            say_status :skip, name, :yellow
+          else
+            copy_file source, File.join("db/migrate", "#{self.class.next_migration_number(migrate_dir)}_#{name}")
           end
-
-          # Generate new timestamp for the host app
-          timestamp = next_migration_number
-          destination_filename = "#{timestamp}_#{migration_name}"
-          destination_path = File.join("db/migrate", destination_filename)
-
-          copy_file source_path, destination_path
-          say "  create  #{destination_path}", :green
-
-          # Small delay to ensure unique timestamps
-          sleep 0.1
         end
-
-        say "\nRun 'bin/rails db:migrate' to apply the migrations.", :green
       end
 
       private
 
-      def migration_exists?(migration_name)
-        Dir.glob(File.join(destination_root, "db/migrate", "*_#{migration_name}")).any?
-      end
-
-      def next_migration_number
-        ActiveRecord::Migration.next_migration_number(
-          Time.now.utc.strftime("%Y%m%d%H%M%S")
-        )
+      def migrate_dir
+        File.join(destination_root, "db/migrate")
       end
     end
   end
