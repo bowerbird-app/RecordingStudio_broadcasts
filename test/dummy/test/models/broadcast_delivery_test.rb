@@ -8,6 +8,7 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
   Recipient = RecordingStudioBroadcasts::Recipient
 
   setup do
+    reset_tables!
     @ann = create_user("ann@example.com")
     @bob = create_user("bob@example.com")
     @recording = create_broadcast

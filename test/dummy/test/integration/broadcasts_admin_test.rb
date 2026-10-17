@@ -7,6 +7,7 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
 
   setup do
+    reset_tables!
     @admin = create_user("admin@admin.com")
     @viewer = create_user("viewer@example.com")
     assert RecordingStudioAccessible.bootstrap_owner_access!(recording: admin_root_recording, actor: @admin).success?

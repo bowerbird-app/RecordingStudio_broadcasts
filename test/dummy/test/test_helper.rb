@@ -28,6 +28,12 @@ module BroadcastTestHelpers
   def broadcast_status(recording)
     recording.reload.recordable.status
   end
+
+  def reset_tables!
+    connection = ActiveRecord::Base.connection
+    tables = connection.tables - %w[schema_migrations ar_internal_metadata]
+    connection.execute("TRUNCATE #{tables.map { |table| connection.quote_table_name(table) }.join(", ")} CASCADE")
+  end
 end
 
 ActiveSupport::TestCase.include ActionMailer::TestHelper

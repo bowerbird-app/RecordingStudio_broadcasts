@@ -6,6 +6,7 @@ class BroadcastClaimTest < ActiveSupport::TestCase
   self.use_transactional_tests = false
 
   setup do
+    reset_tables!
     RecordingStudioBroadcasts.configuration.batch_size = 2
     3.times { |index| create_user("claim#{index}@example.com") }
     @recording = create_broadcast
@@ -14,9 +15,7 @@ class BroadcastClaimTest < ActiveSupport::TestCase
 
   teardown do
     RecordingStudioBroadcasts.configuration.batch_size = 100
-    connection = ActiveRecord::Base.connection
-    tables = connection.tables - %w[schema_migrations ar_internal_metadata]
-    connection.execute("TRUNCATE #{tables.map { |table| connection.quote_table_name(table) }.join(', ')} CASCADE")
+    reset_tables!
   end
 
   test "two workers claiming at the same time never get the same person" do
