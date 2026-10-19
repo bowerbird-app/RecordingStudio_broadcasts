@@ -13,7 +13,7 @@ module RecordingStudioBroadcasts
       # the live window and emits unpublished. It is this broadcast's own clock.
       return if keeping_schedule?(recording, payload)
 
-      revise!(recording, actor: actor_from(payload), status: "draft", scheduled_at: nil)
+      return_to_draft!(recording, actor_from(payload))
     end
 
     # Publishable's after_service hook runs in-process on every Update, including
@@ -26,12 +26,35 @@ module RecordingStudioBroadcasts
       return if recording.nil?
       return unless send_clock_left?(recording, child.recordable)
 
-      return_to_draft!(recording, editor_for(child))
+      draft_or_retry!(recording, editor_for(child))
     end
 
     # The window job's clock no longer matches. The broadcast cannot send, so it goes back to draft.
     def release_mismatched_schedule!(recording, payload)
-      revise!(recording, actor: actor_from(payload), status: "draft", scheduled_at: nil)
+      return_to_draft!(recording, actor_from(payload))
+    end
+
+    # Publishable's hook logs and swallows a raised error, so a failed draft would leave the send queued.
+    # The Publishable write has already committed. The retry is a later transaction.
+    def draft_or_retry!(recording, editor)
+      return_to_draft!(recording, editor)
+    rescue StandardError => e
+      Rails.logger&.error(
+        "RecordingStudioBroadcasts could not return recording #{recording.id} to draft: " \
+        "#{e.class}: #{e.message}"
+      )
+      ReconcilePublishableChangeJob.perform_later(recording.id)
+    end
+
+    def reconcile_external_publishable_change!(recording_id)
+      recording = RecordingStudio::Recording.find_by(id: recording_id)
+      return if recording.nil? || recording.recordable_type != Broadcast.name
+      return unless recording.recordable.status == "scheduled"
+
+      publishable = recording.current_publishable
+      return if publishable.nil? || !send_clock_left?(recording, publishable)
+
+      return_to_draft!(recording, nil)
     end
 
     def external_publishable_update?(service_class, result)

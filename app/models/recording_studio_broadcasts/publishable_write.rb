@@ -9,15 +9,15 @@ module RecordingStudioBroadcasts
     module_function
 
     def own_write
-      previous = Thread.current[KEY]
-      Thread.current[KEY] = true
+      previous = ActiveSupport::IsolatedExecutionState[KEY]
+      ActiveSupport::IsolatedExecutionState[KEY] = true
       yield
     ensure
-      Thread.current[KEY] = previous
+      ActiveSupport::IsolatedExecutionState[KEY] = previous
     end
 
     def own_publishable_write?
-      Thread.current[KEY] == true
+      ActiveSupport::IsolatedExecutionState[KEY] == true
     end
   end
 end

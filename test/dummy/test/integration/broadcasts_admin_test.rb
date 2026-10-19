@@ -219,6 +219,20 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Returned to draft: send time changed in Publishable by cara@example.com"
   end
 
+  test "the show title puts the badge on a section title" do
+    recording = create_broadcast(actor: @admin, title: "Still writing")
+    sign_in @admin
+
+    get "/admin/screens/broadcasts"
+    assert_select "h1", text: "Broadcasts" do |nodes|
+      assert_includes "#{nodes.first["style"]}", "--page-title-h1-size"
+    end
+
+    get "/admin/broadcasts/#{recording.id}"
+    assert_select "h1.text-2xl.font-semibold", text: "Still writing"
+    assert_select ".fp-section-title .shrink-0 span[class*='badge-radius']", text: "Draft"
+  end
+
   test "an admin deletes a draft" do
     recording = create_broadcast(actor: @admin)
     sign_in @admin
@@ -228,4 +242,5 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_redirected_to "/admin/screens/broadcasts"
     assert_not RecordingStudio::Recording.exists?(recording.id)
   end
+
 end

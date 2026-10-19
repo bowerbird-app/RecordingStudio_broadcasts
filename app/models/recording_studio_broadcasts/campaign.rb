@@ -115,6 +115,6 @@ module RecordingStudioBroadcasts
                          :sender_allowed?, :scheduled_window?, :publish_clock, :clock_matches?,
                          :log_skipped_send, :release_mismatched_schedule!, :keeping_schedule?, :same_clock?,
                          :external_publishable_update?, :broadcast_recording_for, :send_clock_left?,
-                         :drafted?, :editor_for, :publishable_update?, :return_to_draft!
+                         :drafted?, :editor_for, :publishable_update?, :return_to_draft!, :draft_or_retry!
   end
 end

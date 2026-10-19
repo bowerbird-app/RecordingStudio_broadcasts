@@ -45,11 +45,11 @@ module RecordingStudioBroadcasts
     end
 
     def self.editor_name(actor)
-      return "someone" if actor.nil?
+      return "the system" if actor.nil?
       return actor.name if actor.respond_to?(:name) && actor.name.present?
       return actor.email if actor.respond_to?(:email) && actor.email.present?
 
-      "someone"
+      "the system"
     end
     private_class_method :editor_name
 

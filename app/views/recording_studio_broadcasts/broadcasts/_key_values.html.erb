@@ -3,8 +3,7 @@
       key_width: "8rem",
       stack_below: :sm,
       spacing: :dense,
-      divider: false,
-      class: "divide-y divide-[var(--surface-border-color)]"
+      divider: true
     ) do %>
   <% rows.each do |row| %>
     <%= render FlatPack::List::Item.new(key: row[:label]) do %>

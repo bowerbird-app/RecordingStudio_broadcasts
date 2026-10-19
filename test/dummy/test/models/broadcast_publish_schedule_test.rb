@@ -224,6 +224,71 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     assert_equal 0, ActionMailer::Base.deliveries.size
   end
 
+  test "an own publishable write does not return the scheduled broadcast to draft" do
+    at = 2.hours.from_now.change(usec: 0)
+    later = 4.hours.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+
+    RecordingStudioBroadcasts::PublishableWrite.own_write do
+      edit_publishable!(status: "scheduled", publish_at: later.utc.iso8601)
+    end
+
+    assert_equal "scheduled", broadcast_status(@recording)
+    assert_equal at, @recording.reload.recordable.scheduled_at
+    assert_nil publishable_change_event(@recording)
+  end
+
+  test "a failed return to draft is logged and retried in a later transaction" do
+    at = 2.hours.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+    campaign = RecordingStudioBroadcasts::Campaign
+    campaign.singleton_class.alias_method(:return_to_draft_before_failure!, :return_to_draft!)
+    campaign.define_singleton_method(:return_to_draft!) { |*, **| raise ActiveRecord::RecordNotSaved, "stopped" }
+    log = StringIO.new
+    previous_logger = Rails.logger
+    Rails.logger = ActiveSupport::Logger.new(log)
+
+    assert_enqueued_with(job: RecordingStudioBroadcasts::ReconcilePublishableChangeJob) do
+      edit_publishable!(status: "scheduled", publish_at: 4.hours.from_now.utc.iso8601)
+    end
+
+    assert_equal "scheduled", broadcast_status(@recording)
+    assert_includes log.string, "could not return recording #{@recording.id} to draft"
+  ensure
+    campaign.singleton_class.alias_method(:return_to_draft!, :return_to_draft_before_failure!)
+    Rails.logger = previous_logger if previous_logger
+    perform_enqueued_jobs
+    assert_equal "draft", broadcast_status(@recording)
+    assert_equal "Returned to draft: send time changed in Publishable by the system",
+                 RecordingStudioBroadcasts::BroadcastsHelper.publishable_return_notice(@recording)
+  end
+
+  test "unpublishing a live publishable returns the scheduled broadcast to draft" do
+    at = 1.hour.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+    make_publishable_live!
+
+    RecordingStudioPublishable::Services::Publishables::Transition.call(
+      parent_recording: @recording, transition: "unpublish", actor: editor
+    )
+
+    assert_returned_to_draft_by!(editor)
+  end
+
+  test "revising a live publishable returns the scheduled broadcast to draft" do
+    at = 1.hour.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+    make_publishable_live!
+
+    RecordingStudioPublishable::Services::Publishables::Update.call(
+      parent_recording: @recording,
+      actor: editor,
+      attributes: { social_title: "Edited in Publishable" }
+    )
+
+    assert_returned_to_draft_by!(editor)
+  end
+
   test "scheduling a live publishable stays scheduled and sends at that time" do
     RecordingStudioPublishable::Services::Publishables::Transition.call(
       parent_recording: @recording, transition: "publish", actor: @ann
@@ -318,6 +383,22 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
 
   def editor
     @cara ||= create_user("cara@example.com")
+  end
+
+  def make_publishable_live!
+    RecordingStudioBroadcasts::PublishableWrite.own_write do
+      RecordingStudioPublishable::Services::Publishables::Update.call(
+        parent_recording: @recording,
+        actor: @ann,
+        attributes: {
+          status: "published",
+          publish_at: 1.minute.ago.utc.iso8601,
+          time_zone: Time.zone.tzinfo.name
+        }
+      )
+    end
+    assert_predicate @recording.reload.current_publishable, :currently_published?
+    assert_equal "scheduled", broadcast_status(@recording)
   end
 
   def edit_publishable!(attributes)

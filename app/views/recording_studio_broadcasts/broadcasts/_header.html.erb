@@ -12,22 +12,11 @@
 <% badge = local_assigns[:badge] %>
 <% subtitle = local_assigns[:subtitle] %>
 <% if badge %>
-  <div>
-    <%= render FlatPack::Collection::Component.new(layout: :wrap, gap: :sm) do |row| %>
-      <% row.with_item do %>
-        <%= tag.h1(
-              title,
-              class: "fp-text-balance m-0 font-bold leading-tight text-[var(--surface-content-color)]"
-            ) %>
-      <% end %>
-      <% row.with_item do %>
-        <%= render badge %>
-      <% end %>
+  <%= render FlatPack::SectionTitle::Component.new(title: title, subtitle: subtitle, level: :h1, spacing: :none) do |heading| %>
+    <% heading.with_trailing do %>
+      <%= render badge %>
     <% end %>
-    <% if subtitle.present? %>
-      <p class="mt-2 text-lg fp-text-pretty text-[var(--surface-muted-content-color)]"><%= subtitle %></p>
-    <% end %>
-  </div>
+  <% end %>
 <% else %>
   <%= render FlatPack::PageTitle::Component.new(title: title, subtitle: subtitle) %>
 <% end %>
