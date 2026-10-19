@@ -15,6 +15,7 @@
 - The dummy app installs Recording Studio Accessible's access-request migrations and Action Mailbox's migrations, including `recording_studio_access_request_intents` and `action_mailbox_inbound_emails`.
 - An empty broadcasts table uses Flatpack's empty state instead of the bare "No data available" line.
 - Draft actions sit in a wrapping row so Delete is not squeezed into a four-column grid cell.
+- Notifications is pinned to `v0.11.0` and Flatpack to `v0.1.254`. Admin is pinned to tag `v2.4.0` (the merge of RecordingStudio_admin #31).
 
 ## [0.1.0]
 
