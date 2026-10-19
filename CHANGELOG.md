@@ -13,9 +13,11 @@
 - The dummy Devise sign-up, forgot-password, edit, and reset pages use Flatpack components in the same centered card as sign-in. A wrong password shows the Devise alert in a Flatpack alert.
 - The dummy asset path serves `application.css`, so engine layouts that link it no longer 500.
 - The dummy app installs Recording Studio Accessible's access-request migrations and Action Mailbox's migrations, including `recording_studio_access_request_intents` and `action_mailbox_inbound_emails`.
-- An empty broadcasts table uses Flatpack's empty state instead of the bare "No data available" line.
-- Draft actions sit in a wrapping row so Delete is not squeezed into a four-column grid cell.
-- Notifications is pinned to `v0.11.0` and Flatpack to `v0.1.254`. Admin is pinned to tag `v2.4.0` (the merge of RecordingStudio_admin #31).
+- An empty broadcasts list renders Flatpack's empty state from the broadcasts view when there are no broadcasts.
+- Draft actions use a Flatpack button group so Delete is not squeezed into a four-column grid cell.
+- A published event sends only when Publishable's window job fires (`source` `scheduled`) and the broadcast is still scheduled. Publishing a draft through Publishable does not send, and Send now enqueues delivery once.
+- Scheduling stores who scheduled it and the send uses that person. Cancel also unpublishes the Publishable record. Schedule and unpublish each write the publishable clock and the broadcast status in one transaction.
+- Notifications is pinned to `v0.11.0` and Flatpack to `v0.1.254` (`flat_pack ~> 0.1.254`). Admin is pinned to tag `v2.4.0` (the merge of RecordingStudio_admin #31).
 
 ## [0.1.0]
 

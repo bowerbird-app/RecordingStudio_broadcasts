@@ -14,17 +14,17 @@ class DevisePagesTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "role=\"alert\""
   end
 
-  test "sign up, forgot password, and reset use the centered flatpack card" do
+  test "sign up, forgot password, and reset ask for an account" do
     get "/users/sign_up"
     assert_response :success
     assert_includes response.body, "Sign up"
-    assert_includes response.body, "fp-card"
-    assert_includes response.body, "max-w-md"
+    assert_includes response.body, "Email"
+    assert_includes response.body, "Password"
 
     get "/users/password/new"
     assert_response :success
     assert_includes response.body, "Forgot your password?"
-    assert_includes response.body, "fp-card"
+    assert_includes response.body, "Email"
 
     get "/users/password/edit", params: { reset_password_token: "sample-token" }
     assert_response :success

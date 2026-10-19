@@ -31,14 +31,17 @@ module RecordingStudioBroadcasts
       raise_blank_schedule!(recording) if scheduled_at.blank?
       return publish_now(recording, actor:) if scheduled_at <= Time.current
 
-      PublishableSchedule.schedule_at(recording, at: scheduled_at, actor:)
-      revise!(recording, actor:, status: "scheduled", scheduled_at:)
+      # One transaction so a failed revise cannot leave a publishable clock or a window job behind.
+      recording.transaction do
+        PublishableSchedule.schedule_at(recording, at: scheduled_at, actor:)
+        revise!(recording, actor:, status: "scheduled", scheduled_at:, metadata: { source: "schedule" })
+      end
       recording
     end
 
     # Publishing with no future time sends the way Send now always has.
-    # Publishable emits published after commit, and that subscriber calls launch.
-    # If the event already sent it, launch's sent_at guard does not send again.
+    # That write emits published with source "write", which deliver_published ignores,
+    # so this launch is the only delivery enqueue.
     def publish_now(recording, actor:)
       assert_action!(recording, :send)
       PublishableSchedule.publish_now(recording, actor:)
@@ -51,18 +54,39 @@ module RecordingStudioBroadcasts
       assert_action!(recording, :unpublish)
       raise InvalidTransition, "A sent broadcast cannot be unpublished" if recording.recordable.sent_at.present?
 
-      PublishableSchedule.unpublish(recording, actor:)
-      revise!(recording, actor:, status: "draft", scheduled_at: nil)
+      recording.transaction do
+        PublishableSchedule.unpublish(recording, actor:)
+        revise!(recording, actor:, status: "draft", scheduled_at: nil)
+      end
       recording
     end
 
+    # A Publishable publish from its own UI or API uses source "write" and must not send.
+    # Only the window job (source "scheduled") sends, and only while the broadcast is still scheduled.
     def deliver_published(payload)
+      return unless payload[:source].to_s == "scheduled"
       return unless payload[:recordable_type] == Broadcast.name
 
       recording = RecordingStudio::Recording.find_by(id: payload[:recording_id])
-      return if recording.nil?
+      return if recording.nil? || recording.recordable.status != "scheduled"
 
-      launch(recording, actor: actor_from(payload))
+      launch(recording, actor: scheduling_actor(recording) || actor_from(payload))
+    end
+
+    def clear_publishable!(recording, actor:)
+      publishable = recording.current_publishable
+      return if publishable.nil? || publishable.status == "draft"
+
+      PublishableSchedule.unpublish(recording, actor:)
+    end
+
+    # revise stores the scheduler on the schedule event. The window job emits with no actor.
+    def scheduling_actor(recording)
+      event = RecordingStudio::Event.where(recording_id: recording.id, action: "updated")
+                                    .where("metadata ->> 'source' = ?", "schedule")
+                                    .order(occurred_at: :desc)
+                                    .first
+      event&.actor
     end
 
     def raise_blank_schedule!(recording)

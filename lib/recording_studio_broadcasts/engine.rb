@@ -37,10 +37,10 @@ module RecordingStudioBroadcasts
     end
 
     config.to_prepare do
+      # Publishable enqueues the window job immediately. Tie it to the surrounding
+      # transaction so a failed schedule does not leave that job queued.
+      RecordingStudioPublishable::WindowTransitionJob.enqueue_after_transaction_commit = true
       RecordingStudioBroadcasts.install_publish_delivery!
-      unless FlatPack::Table::Component.ancestors.include?(BroadcastsTableEmptyState)
-        FlatPack::Table::Component.prepend(BroadcastsTableEmptyState)
-      end
 
       RecordingStudio.register_recordable_type("RecordingStudioBroadcasts::Broadcast")
       RecordingStudioNotifications.register_notification_type(

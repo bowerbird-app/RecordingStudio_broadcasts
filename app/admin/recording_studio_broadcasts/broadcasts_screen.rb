@@ -5,7 +5,6 @@ module RecordingStudioBroadcasts
     key "broadcasts"
     icon :megaphone
     title "Broadcasts"
-    # Admin tables have no empty-state slot, so the subtitle carries it.
     subtitle do |context|
       parent = context.access_recording
       parent && Campaign.recordings(parent).exists? ? "Product updates sent by email" : "No broadcasts yet."
@@ -22,7 +21,9 @@ module RecordingStudioBroadcasts
       false
     end
 
-    query { |context| Campaign.recordings(context.access_recording).includes(:recordable) }
+    query do |context|
+      Campaign.recordings(context.access_recording).includes(:recordable).preload(child_recordings: :recordable)
+    end
 
     table do
       title "All broadcasts"

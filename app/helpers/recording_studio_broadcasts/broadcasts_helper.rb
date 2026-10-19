@@ -18,12 +18,35 @@ module RecordingStudioBroadcasts
       "#{state[:label]} · #{I18n.l(state[:time].in_time_zone, format: :long)}"
     end
 
+    PUBLISHABLE_TYPE = "RecordingStudioPublishable::Publishable"
+
     def self.schedule_state(recording, broadcast)
       if broadcast.sent_at.present?
         { label: "Sent", style: :success, time: broadcast.sent_at }
       elsif broadcast.status == "scheduled"
-        time = recording.current_publishable&.publish_at || broadcast.scheduled_at
+        time = publish_at_for(recording) || broadcast.scheduled_at
         { label: "Scheduled", style: :info, time: time } if time.present?
+      end
+    end
+
+    # Prefer the preloaded publishable child so a table of broadcasts does not query per row.
+    def self.publish_at_for(recording)
+      publishable_for(recording)&.publish_at
+    end
+
+    def self.publishable_for(recording)
+      child = publishable_child(recording)
+      return if child.nil?
+
+      child.recordable
+    end
+
+    def self.publishable_child(recording)
+      children = recording.child_recordings
+      if children.loaded?
+        children.find { |row| row.recordable_type == PUBLISHABLE_TYPE && row.trashed_at.nil? }
+      else
+        recording.publishable_child_recording
       end
     end
 

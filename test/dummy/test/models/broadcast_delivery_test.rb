@@ -115,7 +115,6 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
       perform_enqueued_jobs(only: RecordingStudioPublishable::WindowTransitionJob, at: Time.current)
       assert_equal "sending", broadcast_status(@recording)
     end
-    # The window job re-reads the row and emits without the person who scheduled it.
-    assert_enqueued_with(job: RecordingStudioBroadcasts::DeliverBroadcastJob, args: [ @recording, nil ])
+    assert_enqueued_with(job: RecordingStudioBroadcasts::DeliverBroadcastJob, args: [ @recording, @ann ])
   end
 end

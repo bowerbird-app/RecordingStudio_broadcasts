@@ -128,7 +128,7 @@ PATH
   remote: .
   specs:
     recording_studio_broadcasts (0.2.0)
-      flat_pack (~> 0.1.207)
+      flat_pack (~> 0.1.254)
       rails (~> 8.1.0)
       recording_studio (~> 4.7)
       recording_studio_accessible (~> 0.18)

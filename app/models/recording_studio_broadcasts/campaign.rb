@@ -63,6 +63,7 @@ module RecordingStudioBroadcasts
 
     def cancel(recording, actor:)
       recording.with_lock do
+        clear_publishable!(recording, actor:)
         revise!(recording, actor:, status: "cancelled")
         Recipient.where(recording_id: recording.id, status: "pending")
                  .update_all(status: "skipped", skip_reason: "cancelled", updated_at: Time.current)
@@ -76,13 +77,13 @@ module RecordingStudioBroadcasts
       end
     end
 
-    def revise!(recording, actor:, status: nil, **changes)
+    def revise!(recording, actor:, status: nil, metadata: {}, **changes)
       recording.with_lock do
         from = recording.recordable.status
         to = (status || from).to_s
         assert_allowed!(from, to, editing: changes.any?)
 
-        recording.parent_recording.revise(recording, actor:) do |broadcast|
+        recording.parent_recording.revise(recording, actor:, metadata:) do |broadcast|
           broadcast.assign_attributes(changes.merge(status: to))
         end
       end
@@ -109,6 +110,6 @@ module RecordingStudioBroadcasts
       scheduled_at.nil? || (broadcast.status == "scheduled" && broadcast.scheduled_at.utc.iso8601 == scheduled_at)
     end
     private_class_method :claim_send!, :assert_action!, :assert_allowed!, :due?,
-                         :raise_blank_schedule!, :actor_from
+                         :raise_blank_schedule!, :actor_from, :clear_publishable!, :scheduling_actor
   end
 end

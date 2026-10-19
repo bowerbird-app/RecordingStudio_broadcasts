@@ -34,7 +34,7 @@ module RecordingStudioBroadcasts
       zone = Time.zone
       {
         status: "scheduled",
-        publish_at: at.in_time_zone(zone).strftime("%Y-%m-%d %H:%M:%S"),
+        publish_at: at.utc.iso8601,
         time_zone: zone.tzinfo.name
       }
     end

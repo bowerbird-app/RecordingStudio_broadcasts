@@ -130,7 +130,7 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Scheduled"
     assert_includes response.body, "October 24, 2026 15:00"
     assert_includes response.body, "Unpublish"
-    refute_includes response.body, "lg:grid-cols-4"
+    assert_includes response.body, "Send now"
 
     sent = create_broadcast(actor: @admin, title: "Already sent")
     perform_enqueued_jobs { RecordingStudioBroadcasts.publish_now(sent, actor: @admin) }
@@ -141,7 +141,7 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, I18n.l(sent.reload.recordable.sent_at.in_time_zone, format: :long)
   end
 
-  test "a draft's delete action is not stuck in a four-column grid" do
+  test "a draft's delete action is offered with the other actions" do
     recording = create_broadcast(actor: @admin)
     sign_in @admin
 
@@ -149,7 +149,26 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Delete"
-    refute_includes response.body, "lg:grid-cols-4"
+    assert_includes response.body, "Send now"
+    assert_includes response.body, "Edit"
+  end
+
+  test "the broadcasts table reads each publishable from the preloaded association" do
+    2.times do |index|
+      recording = create_broadcast(actor: @admin, title: "Scheduled #{index}")
+      RecordingStudioBroadcasts.schedule(recording, at: (index + 1).hours.from_now, actor: @admin)
+    end
+
+    recordings = RecordingStudioBroadcasts::Campaign.recordings(admin_root_recording)
+                                                    .includes(:recordable)
+                                                    .preload(child_recordings: :recordable)
+                                                    .to_a
+
+    assert_no_queries do
+      recordings.each { |recording| RecordingStudioBroadcasts::BroadcastsHelper.schedule_text(recording) }
+    end
+    assert_includes recordings.map { |recording| RecordingStudioBroadcasts::BroadcastsHelper.schedule_text(recording) }.join,
+                    "Scheduled"
   end
 
   test "an admin deletes a draft" do

@@ -21,7 +21,7 @@ class RecordingStudioBroadcastsTest < Minitest::Test
     assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications_email", ">= 0.3.15", "< 0.4"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_publishable", ">= 0.9.0", "< 0.10"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_attachable", ">= 0.15", "< 0.21"'
-    assert_includes gemspec, 'spec.add_dependency "flat_pack", "~> 0.1.207"'
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", "~> 0.1.254"'
   end
 
   def test_gemspec_excludes_cursor_config

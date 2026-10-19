@@ -1,11 +1,15 @@
-<div class="flex flex-wrap items-center gap-2">
+<%= render FlatPack::ButtonGroup::Component.new do |group| %>
   <% if controller_name != "sessions" %>
-    <%= render FlatPack::Button::Component.new(text: "Log in", href: new_session_path(resource_name), style: :ghost) %>
+    <% group.button(render(FlatPack::Button::Component.new(text: "Log in", href: new_session_path(resource_name), style: :ghost))) %>
   <% end %>
   <% if devise_mapping.registerable? && controller_name != "registrations" %>
-    <%= render FlatPack::Button::Component.new(text: "Sign up", href: new_registration_path(resource_name), style: :ghost) %>
+    <% group.button(render(FlatPack::Button::Component.new(text: "Sign up", href: new_registration_path(resource_name), style: :ghost))) %>
   <% end %>
   <% if devise_mapping.recoverable? && controller_name != "passwords" && controller_name != "registrations" %>
-    <%= render FlatPack::Button::Component.new(text: "Forgot your password?", href: new_password_path(resource_name), style: :ghost) %>
+    <% group.button(render(FlatPack::Button::Component.new(
+      text: "Forgot your password?",
+      href: new_password_path(resource_name),
+      style: :ghost
+    ))) %>
   <% end %>
-</div>
+<% end %>

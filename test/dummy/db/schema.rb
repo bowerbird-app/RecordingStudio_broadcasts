@@ -294,7 +294,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_060011) do
     t.index ["canonical_url"], name: "index_rs_publishables_on_canonical_url"
     t.index ["slug"], name: "index_rs_publishables_on_slug"
     t.index ["social_image_attachment_recording_id"], name: "index_rs_publishables_on_social_image_attachment_recording_id"
-    t.index ["status", "publish_at", "unpublish_at"], name: "index_publishables_on_status_and_publish_times"
     t.index ["status", "publish_at", "unpublish_at"], name: "index_rs_publishables_on_state_window"
   end
 

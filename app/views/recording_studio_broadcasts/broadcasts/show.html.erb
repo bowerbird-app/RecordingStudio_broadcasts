@@ -41,40 +41,52 @@
     <% end %>
   <% end %>
 
-  <div class="flex flex-wrap items-center gap-2">
-    <% if offered?(:send) %>
-      <%= form_with url: send_message_broadcast_path(@recording), method: :post, class: "inline-flex",
-                    data: { turbo_confirm: "Send this to #{@preview[:eligible]} people now?" } do %>
-        <%= render FlatPack::Button::Component.new(text: "Send now", type: "submit", style: :primary) %>
+  <% if %i[send test_send update cancel unpublish delete].any? { |action| offered?(action) } %>
+    <%= render FlatPack::ButtonGroup::Component.new do |group| %>
+      <% if offered?(:send) %>
+        <% group.button(
+             form_with(url: send_message_broadcast_path(@recording), method: :post, class: "inline-flex",
+                       data: { turbo_confirm: "Send this to #{@preview[:eligible]} people now?" }) do
+               render FlatPack::Button::Component.new(text: "Send now", type: "submit", style: :primary)
+             end
+           ) %>
+      <% end %>
+      <% if offered?(:test_send) %>
+        <% group.button(
+             form_with(url: test_send_broadcast_path(@recording), method: :post, class: "inline-flex") do
+               render FlatPack::Button::Component.new(text: "Send me a test", type: "submit")
+             end
+           ) %>
+      <% end %>
+      <% if offered?(:update) %>
+        <% group.button(render(FlatPack::Button::Component.new(text: "Edit", href: edit_broadcast_path(@recording)))) %>
+      <% end %>
+      <% if offered?(:cancel) %>
+        <% group.button(
+             form_with(url: cancel_broadcast_path(@recording), method: :post, class: "inline-flex",
+                       data: { turbo_confirm: "Cancel this broadcast? People not yet emailed will not get it." }) do
+               render FlatPack::Button::Component.new(text: "Cancel", type: "submit")
+             end
+           ) %>
+      <% end %>
+      <% if offered?(:unpublish) %>
+        <% group.button(
+             form_with(url: unpublish_broadcast_path(@recording), method: :post, class: "inline-flex",
+                       data: { turbo_confirm: "Unpublish this broadcast? It will not be sent." }) do
+               render FlatPack::Button::Component.new(text: "Unpublish", type: "submit")
+             end
+           ) %>
+      <% end %>
+      <% if offered?(:delete) %>
+        <% group.button(
+             form_with(url: broadcast_path(@recording), method: :delete, class: "inline-flex",
+                       data: { turbo_confirm: "Delete this draft?" }) do
+               render FlatPack::Button::Component.new(text: "Delete", type: "submit", style: :danger)
+             end
+           ) %>
       <% end %>
     <% end %>
-    <% if offered?(:test_send) %>
-      <%= form_with url: test_send_broadcast_path(@recording), method: :post, class: "inline-flex" do %>
-        <%= render FlatPack::Button::Component.new(text: "Send me a test", type: "submit") %>
-      <% end %>
-    <% end %>
-    <% if offered?(:update) %>
-      <%= render FlatPack::Button::Component.new(text: "Edit", href: edit_broadcast_path(@recording)) %>
-    <% end %>
-    <% if offered?(:cancel) %>
-      <%= form_with url: cancel_broadcast_path(@recording), method: :post, class: "inline-flex",
-                    data: { turbo_confirm: "Cancel this broadcast? People not yet emailed will not get it." } do %>
-        <%= render FlatPack::Button::Component.new(text: "Cancel", type: "submit") %>
-      <% end %>
-    <% end %>
-    <% if offered?(:unpublish) %>
-      <%= form_with url: unpublish_broadcast_path(@recording), method: :post, class: "inline-flex",
-                    data: { turbo_confirm: "Unpublish this broadcast? It will not be sent." } do %>
-        <%= render FlatPack::Button::Component.new(text: "Unpublish", type: "submit") %>
-      <% end %>
-    <% end %>
-    <% if offered?(:delete) %>
-      <%= form_with url: broadcast_path(@recording), method: :delete, class: "inline-flex",
-                    data: { turbo_confirm: "Delete this draft?" } do %>
-        <%= render FlatPack::Button::Component.new(text: "Delete", type: "submit", style: :danger) %>
-      <% end %>
-    <% end %>
-  </div>
+  <% end %>
 
   <% if offered?(:schedule) %>
     <%= form_with url: schedule_broadcast_path(@recording), method: :post do %>

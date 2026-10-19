@@ -45,7 +45,9 @@
       <% end %>
 
       <%= render FlatPack::PageTitle::Component.new(title: "Cancel my account", variant: :h3, class: "mb-0 pb-0") %>
-      <p class="text-sm text-[var(--surface-muted-content-color)]">Unhappy?</p>
+      <%= render FlatPack::Content::Component.new do %>
+        Unhappy?
+      <% end %>
       <%= form_with url: registration_path(resource_name), method: :delete, class: "inline-flex",
                     data: { turbo_confirm: "Are you sure?" } do %>
         <%= render FlatPack::Button::Component.new(text: "Cancel my account", type: "submit", style: :danger) %>
