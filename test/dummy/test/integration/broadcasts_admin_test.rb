@@ -219,18 +219,23 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Returned to draft: send time changed in Publishable by cara@example.com"
   end
 
-  test "the show title puts the badge on a section title" do
+  test "the show title uses the same page title as the broadcasts index" do
     recording = create_broadcast(actor: @admin, title: "Still writing")
     sign_in @admin
 
     get "/admin/screens/broadcasts"
     assert_select "h1", text: "Broadcasts" do |nodes|
-      assert_includes "#{nodes.first["style"]}", "--page-title-h1-size"
+      @index_class = nodes.first["class"]
+      @index_style = nodes.first["style"]
     end
 
     get "/admin/broadcasts/#{recording.id}"
-    assert_select "h1.text-2xl.font-semibold", text: "Still writing"
-    assert_select ".fp-section-title .shrink-0 span[class*='badge-radius']", text: "Draft"
+    assert_select "h1", text: "Still writing" do |nodes|
+      assert_equal @index_class, nodes.first["class"]
+      assert_equal @index_style, nodes.first["style"]
+    end
+    assert_select ".flex.flex-wrap.items-start span[class*='badge-radius']", text: "Draft"
+    refute_includes response.body, "fp-section-title"
   end
 
   test "an admin deletes a draft" do
