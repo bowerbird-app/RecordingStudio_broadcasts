@@ -42,7 +42,7 @@
   <% end %>
 
   <% if %i[send test_send update cancel unpublish delete].any? { |action| offered?(action) } %>
-    <%= render FlatPack::ButtonGroup::Component.new do |group| %>
+    <%= render FlatPack::ButtonGroup::Component.new(class: "flex-wrap") do |group| %>
       <% if offered?(:send) %>
         <% group.button(
              form_with(url: send_message_broadcast_path(@recording), method: :post, class: "inline-flex",
