@@ -10,9 +10,8 @@
 
 ### Changed
 
-- The dummy Devise sign-up, forgot-password, edit, and reset pages use Flatpack components in the same centered card as sign-in. A wrong password shows the Devise alert in a Flatpack alert.
 - The dummy asset path serves `application.css`, so engine layouts that link it no longer 500.
-- The dummy app installs Recording Studio Accessible's access-request migrations and Action Mailbox's migrations, including `recording_studio_access_request_intents` and `action_mailbox_inbound_emails`.
+- The dummy app installs Recording Studio Accessible's access-request migrations, including `recording_studio_access_request_intents`.
 - An empty broadcasts list renders Flatpack's empty state from the broadcasts view when there are no broadcasts.
 - Draft actions use a Flatpack button group so Delete is not squeezed into a four-column grid cell.
 - A published event sends only when Publishable's window job fires (`source` `scheduled`) and the broadcast is still scheduled. Publishing a draft through Publishable does not send, and Send now enqueues delivery once.
