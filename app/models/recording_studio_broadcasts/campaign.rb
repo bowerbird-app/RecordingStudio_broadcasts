@@ -19,6 +19,8 @@ module RecordingStudioBroadcasts
       "cancelled" => "Cancelled"
     }.freeze
 
+    extend SendClock
+
     module_function
 
     def recordings(parent_recording)
@@ -32,6 +34,7 @@ module RecordingStudioBroadcasts
         schedule: editable,
         test_send: editable,
         send: TRANSITIONS.fetch(status).include?("sending"),
+        unpublish: status == "scheduled",
         cancel: TRANSITIONS.fetch(status).include?("cancelled"),
         delete: status == "draft"
       }.select { |_action, offered| offered }.keys
@@ -56,27 +59,6 @@ module RecordingStudioBroadcasts
 
     def update(recording, actor:, **attributes)
       revise!(recording, actor:, **attributes.slice(*CONTENT))
-    end
-
-    def launch(recording, actor:, scheduled_at: nil)
-      launched = recording.with_lock do
-        broadcast = recording.recordable
-        next false unless due?(broadcast, scheduled_at)
-        next broadcast.status == "sending" unless EDITABLE.include?(broadcast.status)
-
-        Audience.snapshot!(recording)
-        revise!(recording, actor:, status: "sending")
-        true
-      end
-      DeliverBroadcastJob.perform_later(recording, actor) if launched
-      recording
-    end
-
-    def schedule(recording, at:, actor:)
-      scheduled_at = at&.utc
-      revise!(recording, actor:, status: "scheduled", scheduled_at:)
-      ScheduledBroadcastJob.set(wait_until: scheduled_at).perform_later(recording, scheduled_at.iso8601, actor)
-      recording
     end
 
     def cancel(recording, actor:)
@@ -106,6 +88,15 @@ module RecordingStudioBroadcasts
       end
     end
 
+    def assert_action!(recording, action)
+      # revise replaces the recordable, so a caller holding the recording still
+      # has the previous snapshot cached until this reload.
+      status = recording.reload.recordable.status
+      return if actions_for(status).include?(action)
+
+      raise InvalidTransition, "A #{status} broadcast cannot be #{action.to_s.tr('_', ' ')}"
+    end
+
     def assert_allowed!(from, to, editing:)
       raise InvalidTransition, "A #{from} broadcast cannot be edited" if editing && !EDITABLE.include?(from)
       return if to == from || TRANSITIONS.fetch(from).include?(to)
@@ -117,6 +108,7 @@ module RecordingStudioBroadcasts
     def due?(broadcast, scheduled_at)
       scheduled_at.nil? || (broadcast.status == "scheduled" && broadcast.scheduled_at.utc.iso8601 == scheduled_at)
     end
-    private_class_method :assert_allowed!, :due?
+    private_class_method :claim_send!, :assert_action!, :assert_allowed!, :due?,
+                         :raise_blank_schedule!, :actor_from
   end
 end

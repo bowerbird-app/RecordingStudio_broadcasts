@@ -3,16 +3,25 @@
 require "test_helper"
 
 class BroadcastDeliveryTest < ActiveSupport::TestCase
+  # WindowTransitionJob emits after the surrounding transaction commits.
+  # The fixture transaction would swallow that, so these tests commit.
+  self.use_transactional_tests = false
+
+  include ActiveSupport::Testing::TimeHelpers
+
   Campaign = RecordingStudioBroadcasts::Campaign
   Delivery = RecordingStudioBroadcasts::Delivery
   Recipient = RecordingStudioBroadcasts::Recipient
 
   setup do
     reset_tables!
+    ActionMailer::Base.deliveries.clear
     @ann = create_user("ann@example.com")
     @bob = create_user("bob@example.com")
     @recording = create_broadcast
   end
+
+  teardown { reset_tables! }
 
   test "launch emails each ready person once and completes" do
     assert_emails 2 do
@@ -91,17 +100,22 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
   end
 
   test "the scheduled job launches at the latest schedule and the superseded job does nothing" do
-    first = 1.hour.from_now
-    latest = 2.hours.from_now
+    first = 1.hour.from_now.change(usec: 0)
+    latest = 2.hours.from_now.change(usec: 0)
     RecordingStudioBroadcasts.schedule(@recording, at: first, actor: @ann)
     RecordingStudioBroadcasts.schedule(@recording, at: latest, actor: @ann)
 
-    perform_enqueued_jobs(only: RecordingStudioBroadcasts::ScheduledBroadcastJob, at: first + 1.minute)
-    assert_equal "scheduled", broadcast_status(@recording)
-    assert_no_enqueued_jobs(only: RecordingStudioBroadcasts::DeliverBroadcastJob)
+    travel_to(first + 1.minute) do
+      perform_enqueued_jobs(only: RecordingStudioPublishable::WindowTransitionJob, at: Time.current)
+      assert_equal "scheduled", broadcast_status(@recording)
+      assert_no_enqueued_jobs(only: RecordingStudioBroadcasts::DeliverBroadcastJob)
+    end
 
-    perform_enqueued_jobs(only: RecordingStudioBroadcasts::ScheduledBroadcastJob, at: latest + 1.minute)
-    assert_equal "sending", broadcast_status(@recording)
-    assert_enqueued_with(job: RecordingStudioBroadcasts::DeliverBroadcastJob, args: [ @recording, @ann ])
+    travel_to(latest + 1.minute) do
+      perform_enqueued_jobs(only: RecordingStudioPublishable::WindowTransitionJob, at: Time.current)
+      assert_equal "sending", broadcast_status(@recording)
+    end
+    # The window job re-reads the row and emits without the person who scheduled it.
+    assert_enqueued_with(job: RecordingStudioBroadcasts::DeliverBroadcastJob, args: [ @recording, nil ])
   end
 end

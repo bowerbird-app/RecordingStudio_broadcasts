@@ -49,7 +49,7 @@ module RecordingStudioBroadcasts
     end
 
     def send_message
-      perform(:send) { RecordingStudioBroadcasts.launch(@recording, actor: current_actor) }
+      perform(:send) { RecordingStudioBroadcasts.publish_now(@recording, actor: current_actor) }
       redirect_to broadcast_path(@recording), notice: "Sending now."
     end
 
@@ -59,6 +59,11 @@ module RecordingStudioBroadcasts
       redirect_to broadcast_path(@recording), notice: "Scheduled."
     rescue ActiveRecord::RecordInvalid
       redirect_to broadcast_path(@recording), alert: "Pick a time to send it."
+    end
+
+    def unpublish
+      perform(:unpublish) { RecordingStudioBroadcasts.unpublish(@recording, actor: current_actor) }
+      redirect_to broadcast_path(@recording), notice: "Unpublished. It will not be sent."
     end
 
     def cancel

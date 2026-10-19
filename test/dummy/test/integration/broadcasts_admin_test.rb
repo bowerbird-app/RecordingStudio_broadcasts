@@ -26,6 +26,11 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "New broadcast"
     assert_includes response.body, "@hotwired/turbo-rails"
     assert_includes response.body, "controllers/recording_studio_admin/screen_filters_controller"
+
+    get "/admin/screens/broadcasts/table"
+    assert_response :success
+    assert_includes response.body, "Write a product update, choose who should get it"
+    refute_includes response.body, "No data available"
   end
 
   test "an admin creates a broadcast, sees who gets it, tests it, and sends it" do
@@ -111,6 +116,40 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_includes response.body, "Pick a time to send it."
     assert_equal "draft", broadcast_status(recording)
+  end
+
+  test "the show page names a scheduled send and a sent one" do
+    sign_in @admin
+    scheduled = create_broadcast(actor: @admin, title: "October 24 send")
+    at = Time.zone.parse("2026-10-24 15:00")
+    RecordingStudioBroadcasts.schedule(scheduled, at:, actor: @admin)
+
+    get "/admin/broadcasts/#{scheduled.id}"
+
+    assert_response :success
+    assert_includes response.body, "Scheduled"
+    assert_includes response.body, "October 24, 2026 15:00"
+    assert_includes response.body, "Unpublish"
+    refute_includes response.body, "lg:grid-cols-4"
+
+    sent = create_broadcast(actor: @admin, title: "Already sent")
+    perform_enqueued_jobs { RecordingStudioBroadcasts.publish_now(sent, actor: @admin) }
+
+    get "/admin/broadcasts/#{sent.id}"
+
+    assert_includes response.body, "Sent"
+    assert_includes response.body, I18n.l(sent.reload.recordable.sent_at.in_time_zone, format: :long)
+  end
+
+  test "a draft's delete action is not stuck in a four-column grid" do
+    recording = create_broadcast(actor: @admin)
+    sign_in @admin
+
+    get "/admin/broadcasts/#{recording.id}"
+
+    assert_response :success
+    assert_includes response.body, "Delete"
+    refute_includes response.body, "lg:grid-cols-4"
   end
 
   test "an admin deletes a draft" do

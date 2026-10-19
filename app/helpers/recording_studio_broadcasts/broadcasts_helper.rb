@@ -10,6 +10,27 @@ module RecordingStudioBroadcasts
       "cancelled" => :default
     }.freeze
 
+    def self.schedule_text(recording)
+      broadcast = recording.recordable
+      state = schedule_state(recording, broadcast)
+      return "Not scheduled" if state.nil?
+
+      "#{state[:label]} · #{I18n.l(state[:time].in_time_zone, format: :long)}"
+    end
+
+    def self.schedule_state(recording, broadcast)
+      if broadcast.sent_at.present?
+        { label: "Sent", style: :success, time: broadcast.sent_at }
+      elsif broadcast.status == "scheduled"
+        time = recording.current_publishable&.publish_at || broadcast.scheduled_at
+        { label: "Scheduled", style: :info, time: time } if time.present?
+      end
+    end
+
+    def broadcast_schedule_state(recording, broadcast)
+      BroadcastsHelper.schedule_state(recording, broadcast)
+    end
+
     def broadcast_status_badge(broadcast)
       FlatPack::Badge::Component.new(
         text: Campaign::STATUS_LABELS.fetch(broadcast.status),

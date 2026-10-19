@@ -7,6 +7,13 @@
         class: "mb-0 pb-0"
       ) %>
 
+      <% if alert.present? %>
+        <%= render FlatPack::Alert::Component.new(description: alert, style: :danger) %>
+      <% end %>
+      <% if notice.present? %>
+        <%= render FlatPack::Alert::Component.new(description: notice, style: :success) %>
+      <% end %>
+
       <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
         <div class="space-y-4">
         <%= render FlatPack::EmailInput::Component.new(

@@ -1,0 +1,59 @@
+<%= render FlatPack::Card::Component.new(style: :default, class: "w-full") do |card| %>
+  <% card.body do %>
+    <div class="space-y-6">
+      <%= render FlatPack::PageTitle::Component.new(title: "Edit account", variant: :h2, class: "mb-0 pb-0") %>
+
+      <% if alert.present? %>
+        <%= render FlatPack::Alert::Component.new(description: alert, style: :danger) %>
+      <% end %>
+      <% if notice.present? %>
+        <%= render FlatPack::Alert::Component.new(description: notice, style: :success) %>
+      <% end %>
+
+      <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put }) do |f| %>
+        <div class="space-y-4">
+          <%= render "devise/shared/error_messages", resource: resource %>
+          <%= render FlatPack::EmailInput::Component.new(
+            name: "#{resource_name}[email]",
+            label: "Email",
+            value: resource.email,
+            required: true
+          ) %>
+          <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
+            <%= render FlatPack::Alert::Component.new(
+              description: "Currently waiting confirmation for: #{resource.unconfirmed_email}",
+              style: :info
+            ) %>
+          <% end %>
+          <%= render FlatPack::PasswordInput::Component.new(
+            name: "#{resource_name}[password]",
+            label: "Password",
+            help_text: "Leave blank if you don't want to change it."
+          ) %>
+          <%= render FlatPack::PasswordInput::Component.new(
+            name: "#{resource_name}[password_confirmation]",
+            label: "Password confirmation"
+          ) %>
+          <%= render FlatPack::PasswordInput::Component.new(
+            name: "#{resource_name}[current_password]",
+            label: "Current password",
+            help_text: "We need your current password to confirm your changes.",
+            required: true
+          ) %>
+          <%= render FlatPack::Button::Component.new(text: "Update", style: :primary, type: "submit") %>
+        </div>
+      <% end %>
+
+      <%= render FlatPack::PageTitle::Component.new(title: "Cancel my account", variant: :h3, class: "mb-0 pb-0") %>
+      <p class="text-sm text-[var(--surface-muted-content-color)]">Unhappy?</p>
+      <%= form_with url: registration_path(resource_name), method: :delete, class: "inline-flex",
+                    data: { turbo_confirm: "Are you sure?" } do %>
+        <%= render FlatPack::Button::Component.new(text: "Cancel my account", type: "submit", style: :danger) %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% card.footer do %>
+    <%= render FlatPack::Button::Component.new(text: "Back", href: "/", style: :ghost) %>
+  <% end %>
+<% end %>

@@ -14,18 +14,30 @@ gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_access
 gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.3"
 gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.10.0"
 gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.3.15"
-gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.1.0"
+gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.20.0"
+gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v0.9.1"
+gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.2.0"
 ```
 
-Install Admin, Notifications, and the email channel first, following their READMEs. Then:
+Install Admin, Notifications, the email channel, and Publishable first, following their READMEs. Publishable's recordable includes Attachable, so install that gem too. Then:
 
 ```bash
+bin/rails generate recording_studio_publishable:install
+bin/rails generate recording_studio_publishable:migrations
 bin/rails generate recording_studio_broadcasts:install
 bin/rails generate recording_studio_broadcasts:migrations
 bin/rails db:migrate
 ```
 
-The install generator writes `config/initializers/recording_studio_broadcasts.rb`. If your admin root model lists its sections with `recording_studio_admin_sections`, the generator adds `section :broadcasts` to that block. Admin 2.3 cannot add a section to a host list on its own. If you add the line by hand, it is one line:
+The install generator writes `config/initializers/recording_studio_broadcasts.rb`. Add these recordable types if your initializer lists them by hand. Broadcasts registers them after your initializers load:
+
+```ruby
+"RecordingStudioBroadcasts::Broadcast",
+"RecordingStudioPublishable::Publishable",
+"RecordingStudioAttachable::Attachment"
+```
+
+If your admin root model lists its sections with `recording_studio_admin_sections`, the generator adds `section :broadcasts` to that block. Admin 2.3 cannot add a section to a host list on its own. If you add the line by hand, it is one line:
 
 ```ruby
 recording_studio_admin_sections do
@@ -80,9 +92,13 @@ The same commands are available in Ruby:
 RecordingStudioBroadcasts.preview(recording)            # => { matching:, eligible:, excluded: }
 RecordingStudioBroadcasts.test_send(recording, actor: user)
 RecordingStudioBroadcasts.launch(recording, actor: user)
+RecordingStudioBroadcasts.publish_now(recording, actor: user)
 RecordingStudioBroadcasts.schedule(recording, at: 1.day.from_now, actor: user)
+RecordingStudioBroadcasts.unpublish(recording, actor: user)
 RecordingStudioBroadcasts.cancel(recording, actor: user)
 ```
+
+`schedule` stores the send time as Publishable's `publish_at`. Publishable enqueues `WindowTransitionJob` for that time, and the published event sends the broadcast. A publish time that is already due sends immediately. Unpublishing before that time returns the broadcast to draft and sends nothing. `sent_at` is set when sending starts, so a second publish, a reschedule, or a job from an older clock cannot send twice.
 
 Launch copies the ready audience into a recipients table, then a job sends in batches of `batch_size`. Each person gets one email per broadcast, even if the job retries. People who turned off product updates, or whose address is suppressed, are skipped and counted. The unsubscribe link and `List-Unsubscribe` headers come from the email channel.
 

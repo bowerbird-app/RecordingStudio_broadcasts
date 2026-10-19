@@ -31,6 +31,9 @@ module RecordingStudioBroadcasts
       column :status, sortable: false, display: :badge,
                       value: ->(row, _context) { Campaign::STATUS_LABELS.fetch(row.recordable.status) },
                       display_options: ->(row) { { style: BroadcastsHelper::STATUS_STYLES.fetch(row.recordable.status) } }
+      column :sends_at, title: "Sends at", sortable: false, value: lambda { |row, _context|
+        BroadcastsHelper.schedule_text(row)
+      }
       column :created_at, title: "Created"
       admin_action "broadcasts.show", as: :open
       default_sort :created_at, direction: :desc
