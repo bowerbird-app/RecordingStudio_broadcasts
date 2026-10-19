@@ -39,14 +39,28 @@ module RecordingStudioBroadcasts
     def draft_or_retry!(recording, editor)
       return_to_draft!(recording, editor)
     rescue StandardError => e
-      Rails.logger&.error(
-        "RecordingStudioBroadcasts could not return recording #{recording.id} to draft: " \
-        "#{e.class}: #{e.message}"
-      )
-      ReconcilePublishableChangeJob.perform_later(recording.id)
+      log_draft_failure(recording, e)
+      enqueue_reconcile(recording, editor)
     end
 
-    def reconcile_external_publishable_change!(recording_id)
+    def log_draft_failure(recording, error)
+      Rails.logger&.error(
+        "RecordingStudioBroadcasts could not return recording #{recording.id} to draft: " \
+        "#{error.class}: #{error.message}"
+      )
+    end
+
+    # The host transaction may still be open. Enqueue only after it commits.
+    def enqueue_reconcile(recording, editor)
+      recording_id = recording.id
+      editor_type = editor&.class&.name
+      editor_id = editor&.id
+      ActiveRecord.after_all_transactions_commit do
+        ReconcilePublishableChangeJob.perform_later(recording_id, editor_type, editor_id)
+      end
+    end
+
+    def reconcile_external_publishable_change!(recording_id, editor_type = nil, editor_id = nil)
       recording = RecordingStudio::Recording.find_by(id: recording_id)
       return if recording.nil? || recording.recordable_type != Broadcast.name
       return unless recording.recordable.status == "scheduled"
@@ -54,7 +68,7 @@ module RecordingStudioBroadcasts
       publishable = recording.current_publishable
       return if publishable.nil? || !send_clock_left?(recording, publishable)
 
-      return_to_draft!(recording, nil)
+      return_to_draft!(recording, actor_from(actor_type: editor_type, actor_id: editor_id))
     end
 
     def external_publishable_update?(service_class, result)

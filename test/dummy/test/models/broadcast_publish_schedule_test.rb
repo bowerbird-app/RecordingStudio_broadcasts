@@ -248,19 +248,62 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     previous_logger = Rails.logger
     Rails.logger = ActiveSupport::Logger.new(log)
 
-    assert_enqueued_with(job: RecordingStudioBroadcasts::ReconcilePublishableChangeJob) do
-      edit_publishable!(status: "scheduled", publish_at: 4.hours.from_now.utc.iso8601)
+    begin
+      assert_enqueued_with(
+        job: RecordingStudioBroadcasts::ReconcilePublishableChangeJob,
+        args: [@recording.id, editor.class.name, editor.id]
+      ) do
+        edit_publishable!(status: "scheduled", publish_at: 4.hours.from_now.utc.iso8601)
+      end
+
+      assert_equal "scheduled", broadcast_status(@recording)
+      assert_includes log.string, "could not return recording #{@recording.id} to draft"
+    ensure
+      campaign.singleton_class.alias_method(:return_to_draft!, :return_to_draft_before_failure!)
+      Rails.logger = previous_logger if previous_logger
     end
 
-    assert_equal "scheduled", broadcast_status(@recording)
-    assert_includes log.string, "could not return recording #{@recording.id} to draft"
-  ensure
-    campaign.singleton_class.alias_method(:return_to_draft!, :return_to_draft_before_failure!)
-    Rails.logger = previous_logger if previous_logger
     perform_enqueued_jobs
     assert_equal "draft", broadcast_status(@recording)
-    assert_equal "Returned to draft: send time changed in Publishable by the system",
+    assert_equal "Returned to draft: send time changed in Publishable by #{editor.email}",
                  RecordingStudioBroadcasts::BroadcastsHelper.publishable_return_notice(@recording)
+  end
+
+  test "the reconcile job leaves a sending broadcast alone" do
+    RecordingStudioBroadcasts::Campaign.send(:revise!, @recording, actor: @ann, status: "sending")
+
+    assert_no_reconcile_change { perform_reconcile_job }
+
+    assert_equal "sending", broadcast_status(@recording)
+  end
+
+  test "the reconcile job leaves a sent broadcast alone" do
+    perform_enqueued_jobs { RecordingStudioBroadcasts.publish_now(@recording, actor: @ann) }
+    assert_equal "completed", broadcast_status(@recording)
+
+    assert_no_reconcile_change { perform_reconcile_job }
+
+    assert_equal "completed", broadcast_status(@recording)
+  end
+
+  test "the reconcile job leaves a rescheduled broadcast alone" do
+    sooner = 1.hour.from_now.change(usec: 0)
+    later = 4.hours.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at: sooner, actor: @ann)
+    RecordingStudioBroadcasts.schedule(@recording, at: later, actor: @ann)
+
+    assert_no_reconcile_change { perform_reconcile_job }
+
+    assert_equal "scheduled", broadcast_status(@recording)
+    assert_equal later, @recording.reload.recordable.scheduled_at
+  end
+
+  test "the reconcile job leaves a draft broadcast alone" do
+    assert_equal "draft", broadcast_status(@recording)
+
+    assert_no_reconcile_change { perform_reconcile_job }
+
+    assert_equal "draft", broadcast_status(@recording)
   end
 
   test "unpublishing a live publishable returns the scheduled broadcast to draft" do
@@ -422,5 +465,17 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     recording.events(actions: "updated").find do |event|
       event.metadata.to_h.stringify_keys["source"] == "publishable_change"
     end
+  end
+
+  def perform_reconcile_job
+    RecordingStudioBroadcasts::ReconcilePublishableChangeJob.perform_now(
+      @recording.id, editor.class.name, editor.id
+    )
+  end
+
+  def assert_no_reconcile_change
+    assert_nil publishable_change_event(@recording)
+    yield
+    assert_nil publishable_change_event(@recording.reload)
   end
 end

@@ -234,8 +234,16 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
       assert_equal @index_class, nodes.first["class"]
       assert_equal @index_style, nodes.first["style"]
     end
-    assert_select ".flex.flex-wrap.items-start span[class*='badge-radius']", text: "Draft"
-    refute_includes response.body, "fp-section-title"
+    assert_select "h1", text: "Still writing" do |headings|
+      row = headings.first
+      row = row.parent until row.nil? || badge_sits_beside_title?(row)
+      assert row
+      heading = row.element_children.find { |child| child.css("h1").any? }
+      badge = row.element_children.find { |child| child.text.include?("Draft") && child.css("h1").empty? }
+      assert heading
+      assert badge
+      assert_operator row.element_children.index(heading), :<, row.element_children.index(badge)
+    end
   end
 
   test "an admin deletes a draft" do
@@ -248,4 +256,11 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_not RecordingStudio::Recording.exists?(recording.id)
   end
 
+  private
+
+  def badge_sits_beside_title?(row)
+    children = row.element_children
+    children.any? { |child| child.css("h1").any? } &&
+      children.any? { |child| child.text.include?("Draft") && child.css("h1").empty? }
+  end
 end
