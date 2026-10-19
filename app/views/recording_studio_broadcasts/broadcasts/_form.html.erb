@@ -20,7 +20,8 @@
       label: "Message",
       value: broadcast.body,
       rows: 8,
-      rich_text: false
+      rich_text: false,
+      style: "--form-control-radius: var(--radius-md)"
     ) %>
     <% if RecordingStudioBroadcasts.filters.all.any? %>
       <%= render FlatPack::PageTitle::Component.new(

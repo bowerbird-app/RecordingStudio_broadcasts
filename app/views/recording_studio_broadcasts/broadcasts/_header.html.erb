@@ -12,21 +12,23 @@
 <% badge = local_assigns[:badge] %>
 <% subtitle = local_assigns[:subtitle] %>
 <% if badge %>
-  <%= render FlatPack::Collection::Component.new(layout: :wrap, gap: :sm) do |row| %>
-    <% row.with_item do %>
-      <%= tag.h1(
-            title,
-            class: "fp-text-balance m-0 font-bold leading-tight text-[var(--surface-content-color)]",
-            style: "font-size: var(--page-title-h1-size);"
-          ) %>
+  <div>
+    <%= render FlatPack::Collection::Component.new(layout: :wrap, gap: :sm) do |row| %>
+      <% row.with_item do %>
+        <%= tag.h1(
+              title,
+              class: "fp-text-balance m-0 font-bold leading-tight text-[var(--surface-content-color)]",
+              style: "font-size: var(--page-title-h1-size);"
+            ) %>
+      <% end %>
+      <% row.with_item do %>
+        <%= render badge %>
+      <% end %>
     <% end %>
-    <% row.with_item do %>
-      <%= render badge %>
+    <% if subtitle.present? %>
+      <p class="mt-2 text-lg fp-text-pretty text-[var(--surface-muted-content-color)]"><%= subtitle %></p>
     <% end %>
-  <% end %>
-  <% if subtitle.present? %>
-    <p class="mt-2 mb-6 text-lg fp-text-pretty text-[var(--surface-muted-content-color)]"><%= subtitle %></p>
-  <% end %>
+  </div>
 <% else %>
   <%= render FlatPack::PageTitle::Component.new(title: title, subtitle: subtitle) %>
 <% end %>

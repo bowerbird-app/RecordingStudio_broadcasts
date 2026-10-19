@@ -29,7 +29,11 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
 
     get "/admin/broadcasts/new"
     assert_response :success
-    assert_select "textarea[name='broadcast[body]']"
+    assert_select "textarea[name='broadcast[body]']" do |nodes|
+      classes = nodes.first["class"].to_s
+      refute_includes classes, "rounded-full"
+      assert_includes classes, "rounded-[var(--form-control-radius)]"
+    end
 
     get "/admin/screens/broadcasts/table"
     assert_response :success
