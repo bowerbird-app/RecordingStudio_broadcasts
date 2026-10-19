@@ -22,14 +22,20 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     get "/admin/screens/broadcasts"
 
     assert_response :success
-    assert_includes response.body, "No broadcasts yet."
+    assert_includes response.body, "Product updates sent by email"
     assert_includes response.body, "New broadcast"
     assert_includes response.body, "@hotwired/turbo-rails"
     assert_includes response.body, "controllers/recording_studio_admin/screen_filters_controller"
 
+    get "/admin/broadcasts/new"
+    assert_response :success
+    assert_select "textarea[name='broadcast[body]'][class*='radius-md']"
+
     get "/admin/screens/broadcasts/table"
     assert_response :success
+    assert_includes response.body, "No broadcasts yet"
     assert_includes response.body, "Write a product update, choose who should get it"
+    assert_select "a[href='/admin/broadcasts/new']", text: "New broadcast"
     refute_includes response.body, "No data available"
   end
 
@@ -47,9 +53,12 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
 
     follow_redirect!
     assert_includes response.body, "Saved."
-    assert_select "tr", text: /Matching\s*3/
-    assert_select "tr", text: /Ready\s*3/
-    assert_select "tr", text: /Left out\s*0/
+    assert_select "dt", text: "Matching"
+    assert_select "dd", text: "3"
+    assert_select "dt", text: "Ready"
+    assert_select "dd", text: "3"
+    assert_select "dt", text: "Left out"
+    assert_select "dd", text: "0"
 
     assert_emails 1 do
       post "/admin/broadcasts/#{recording.id}/test_send"
@@ -71,7 +80,8 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_equal "completed", broadcast_status(recording)
 
     follow_redirect!
-    assert_select "tr", text: /Sent\s*3/
+    assert_select "dt", text: "Sent"
+    assert_select "dd", text: "3"
     refute_includes response.body, "Send now"
   end
 
@@ -127,17 +137,18 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     get "/admin/broadcasts/#{scheduled.id}"
 
     assert_response :success
-    assert_includes response.body, "Scheduled"
+    assert_select "span[class*='badge-radius']", text: "Scheduled", count: 1
     assert_includes response.body, "October 24, 2026 15:00"
     assert_includes response.body, "Unpublish"
     assert_includes response.body, "Send now"
+    assert_includes response.body, "Schedule"
 
     sent = create_broadcast(actor: @admin, title: "Already sent")
     perform_enqueued_jobs { RecordingStudioBroadcasts.publish_now(sent, actor: @admin) }
 
     get "/admin/broadcasts/#{sent.id}"
 
-    assert_includes response.body, "Sent"
+    assert_select "span[class*='badge-radius']", text: "Sent", count: 1
     assert_includes response.body, I18n.l(sent.reload.recordable.sent_at.in_time_zone, format: :long)
   end
 

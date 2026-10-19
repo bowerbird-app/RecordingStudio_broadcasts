@@ -2,4 +2,10 @@
       title: "No broadcasts yet",
       description: "Write a product update, choose who should get it, and send it now or at a set time.",
       icon: :megaphone
-    ) %>
+    ) do |state| %>
+  <% if RecordingStudioBroadcasts::BroadcastsScreen.creatable?(recording_studio_admin_context) %>
+    <% state.item do %>
+      <%= render FlatPack::Button::Component.new(text: "New broadcast", href: new_broadcast_path, style: :primary) %>
+    <% end %>
+  <% end %>
+<% end %>

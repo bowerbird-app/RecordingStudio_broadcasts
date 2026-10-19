@@ -5,10 +5,7 @@ module RecordingStudioBroadcasts
     key "broadcasts"
     icon :megaphone
     title "Broadcasts"
-    subtitle do |context|
-      parent = context.access_recording
-      parent && Campaign.recordings(parent).exists? ? "Product updates sent by email" : "No broadcasts yet."
-    end
+    subtitle "Product updates sent by email"
 
     button :new_broadcast, text: "New broadcast", style: :primary,
                            url: ->(context) { context.routes.new_broadcast_path },
@@ -27,7 +24,13 @@ module RecordingStudioBroadcasts
 
     table do
       title "All broadcasts"
-      column :title, sortable: false, value: ->(row, _context) { row.recordable.title }
+      column :title, sortable: false, value: lambda { |row, context|
+        title = row.recordable.title
+        view = context.view_context
+        next title if view.nil?
+
+        view.link_to(title, context.routes.broadcast_path(row))
+      }
       column :subject, sortable: false, value: ->(row, _context) { row.recordable.subject }
       column :status, sortable: false, display: :badge,
                       value: ->(row, _context) { Campaign::STATUS_LABELS.fetch(row.recordable.status) },

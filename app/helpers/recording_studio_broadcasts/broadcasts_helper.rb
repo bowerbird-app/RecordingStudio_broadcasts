@@ -54,6 +54,12 @@ module RecordingStudioBroadcasts
       BroadcastsHelper.schedule_state(recording, broadcast)
     end
 
+    def broadcast_action_button(text, url, confirm: nil)
+      data = { turbo_method: :post }
+      data[:turbo_confirm] = confirm if confirm.present?
+      FlatPack::Button::Component.new(text: text, href: url, data: data)
+    end
+
     def broadcast_status_badge(broadcast)
       FlatPack::Badge::Component.new(
         text: Campaign::STATUS_LABELS.fetch(broadcast.status),
