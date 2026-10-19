@@ -43,30 +43,30 @@
               ) %>
         <% end %>
       <% end %>
-      <% if secondary.any? %>
+      <% if offered?(:test_send) %>
         <% row.with_item do %>
-          <%= render FlatPack::ButtonGroup::Component.new do |group| %>
-            <% if offered?(:test_send) %>
-              <% group.button(render(broadcast_action_button(
-                   "Send me a test", test_send_broadcast_path(@recording)
-                 ))) %>
-            <% end %>
-            <% if offered?(:update) %>
-              <% group.button(render(FlatPack::Button::Component.new(text: "Edit", href: edit_broadcast_path(@recording)))) %>
-            <% end %>
-            <% if offered?(:cancel) %>
-              <% group.button(render(broadcast_action_button(
-                   "Cancel", cancel_broadcast_path(@recording),
-                   confirm: "Cancel this broadcast? People not yet emailed will not get it."
-                 ))) %>
-            <% end %>
-            <% if offered?(:unpublish) %>
-              <% group.button(render(broadcast_action_button(
-                   "Unpublish", unpublish_broadcast_path(@recording),
-                   confirm: "Unpublish this broadcast? It will not be sent."
-                 ))) %>
-            <% end %>
-          <% end %>
+          <%= render broadcast_action_button("Send me a test", test_send_broadcast_path(@recording)) %>
+        <% end %>
+      <% end %>
+      <% if offered?(:update) %>
+        <% row.with_item do %>
+          <%= render FlatPack::Button::Component.new(text: "Edit", href: edit_broadcast_path(@recording)) %>
+        <% end %>
+      <% end %>
+      <% if offered?(:cancel) %>
+        <% row.with_item do %>
+          <%= render broadcast_action_button(
+                "Cancel", cancel_broadcast_path(@recording),
+                confirm: "Cancel this broadcast? People not yet emailed will not get it."
+              ) %>
+        <% end %>
+      <% end %>
+      <% if offered?(:unpublish) %>
+        <% row.with_item do %>
+          <%= render broadcast_action_button(
+                "Unpublish", unpublish_broadcast_path(@recording),
+                confirm: "Unpublish this broadcast? It will not be sent."
+              ) %>
         <% end %>
       <% end %>
       <% if offered?(:delete) %>

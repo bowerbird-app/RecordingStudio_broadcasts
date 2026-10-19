@@ -20,6 +20,7 @@ module RecordingStudioBroadcasts
     }.freeze
 
     extend SendClock
+    extend PublishableWithdrawal
 
     module_function
 
@@ -110,6 +111,7 @@ module RecordingStudioBroadcasts
       scheduled_at.nil? || (broadcast.status == "scheduled" && broadcast.scheduled_at.utc.iso8601 == scheduled_at)
     end
     private_class_method :claim_send!, :assert_action!, :assert_allowed!, :due?,
-                         :raise_blank_schedule!, :actor_from, :clear_publishable!, :scheduling_actor
+                         :raise_blank_schedule!, :actor_from, :clear_publishable!, :scheduling_actor,
+                         :sender_allowed?, :scheduled_window?, :publish_clock
   end
 end

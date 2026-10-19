@@ -14,6 +14,16 @@ module BroadcastTestHelpers
     User.create!(email: email, password: "Password", password_confirmation: "Password", created_at: created_at)
   end
 
+  def grant_sender!(actor)
+    root = admin_root_recording
+    return if RecordingStudioAccessible.authorized?(actor: actor, recording: root, role: :admin)
+
+    result = RecordingStudioAccessible.bootstrap_owner_access!(recording: root, actor: actor)
+    return if result.success?
+
+    raise "could not grant send access: #{result.error.inspect}"
+  end
+
   def create_broadcast(actor: nil, **attributes)
     RecordingStudioBroadcasts::Campaign.create(
       admin_root_recording,

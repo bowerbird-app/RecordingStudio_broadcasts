@@ -18,6 +18,7 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
     ActionMailer::Base.deliveries.clear
     @ann = create_user("ann@example.com")
     @bob = create_user("bob@example.com")
+    grant_sender!(@ann)
     @recording = create_broadcast
   end
 
@@ -58,8 +59,8 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
   end
 
   test "cancel skips the people not yet sent to and sends nothing more" do
-    RecordingStudioBroadcasts.launch(@recording, actor: nil)
-    RecordingStudioBroadcasts.cancel(@recording, actor: nil)
+    RecordingStudioBroadcasts.launch(@recording, actor: @ann)
+    RecordingStudioBroadcasts.cancel(@recording, actor: @ann)
 
     assert_no_emails { perform_enqueued_jobs }
     assert_equal [ %w[skipped cancelled] ] * 2, Recipient.where(recording_id: @recording.id).pluck(:status, :skip_reason)

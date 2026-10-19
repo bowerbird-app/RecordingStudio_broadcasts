@@ -1,7 +1,0 @@
-<%= turbo_frame_tag "screen-table" do %>
-  <% if screen.key.to_s == "broadcasts" && screen.table.rows.blank? %>
-    <%= render "recording_studio_broadcasts/broadcasts/empty_state" %>
-  <% else %>
-    <%= render "table", screen: screen %>
-  <% end %>
-<% end %>

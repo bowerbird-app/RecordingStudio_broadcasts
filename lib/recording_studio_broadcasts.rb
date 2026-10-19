@@ -73,6 +73,13 @@ module RecordingStudioBroadcasts
       RecordingStudioPublishable.subscribe(:published) do |event|
         Campaign.deliver_published(event.payload)
       end
+      # These fire when a live publishable is unpublished or edited. A future
+      # schedule is not live yet, so Publishable does not emit them for that edit.
+      %i[unpublished revised].each do |name|
+        RecordingStudioPublishable.subscribe(name) do |event|
+          Campaign.withdraw_after_publishable_change(event.payload)
+        end
+      end
     end
   end
 end

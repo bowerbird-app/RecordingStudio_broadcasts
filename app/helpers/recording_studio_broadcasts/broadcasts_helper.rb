@@ -44,7 +44,8 @@ module RecordingStudioBroadcasts
     def self.publishable_child(recording)
       children = recording.child_recordings
       if children.loaded?
-        children.find { |row| row.recordable_type == PUBLISHABLE_TYPE && row.trashed_at.nil? }
+        scope = RecordingStudioPublishable::TrashedAt.merge_active(recordable_type: PUBLISHABLE_TYPE)
+        children.find { |row| scope.all? { |key, value| row.public_send(key) == value } }
       else
         recording.publishable_child_recording
       end

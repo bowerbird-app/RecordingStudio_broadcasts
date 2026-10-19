@@ -33,10 +33,8 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
 
     get "/admin/screens/broadcasts/table"
     assert_response :success
-    assert_includes response.body, "No broadcasts yet"
-    assert_includes response.body, "Write a product update, choose who should get it"
-    assert_select "a[href='/admin/broadcasts/new']", text: "New broadcast"
-    refute_includes response.body, "No data available"
+    assert_includes response.body, "No data available"
+    refute_includes response.body, "Write a product update, choose who should get it"
   end
 
   test "an admin creates a broadcast, sees who gets it, tests it, and sends it" do
@@ -170,10 +168,8 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
       RecordingStudioBroadcasts.schedule(recording, at: (index + 1).hours.from_now, actor: @admin)
     end
 
-    recordings = RecordingStudioBroadcasts::Campaign.recordings(admin_root_recording)
-                                                    .includes(:recordable)
-                                                    .preload(child_recordings: :recordable)
-                                                    .to_a
+    context = RecordingStudioAdmin::Context.new(current_actor: @admin)
+    recordings = RecordingStudioBroadcasts::BroadcastsScreen.query.call(context).to_a
 
     assert_no_queries do
       recordings.each { |recording| RecordingStudioBroadcasts::BroadcastsHelper.schedule_text(recording) }

@@ -12,10 +12,10 @@
 
 - The dummy asset path serves `application.css`, so engine layouts that link it no longer 500.
 - The dummy app installs Recording Studio Accessible's access-request migrations, including `recording_studio_access_request_intents`.
-- An empty broadcasts list renders Flatpack's empty state from the broadcasts view, with a New broadcast action. The screen subtitle stays "Product updates sent by email".
-- Show-page actions use Flatpack buttons: Send now stands alone, the other actions share one button group, and Delete is a separate danger button. Details stack as a key/value list on a narrow screen. The status is one badge beside the title.
-- A published event sends only when Publishable's window job fires (`source` `scheduled`) and the broadcast is still scheduled. Publishing a draft through Publishable does not send, and Send now enqueues delivery once.
-- Scheduling stores who scheduled it and the send uses that person. Cancel also unpublishes the Publishable record. Schedule and unpublish each write the publishable clock and the broadcast status in one transaction.
+- The broadcasts screen subtitle stays "Product updates sent by email". An empty list uses Admin's normal empty table.
+- Show-page actions use Flatpack buttons that wrap: Send now stands alone, the other actions are the same button shape, and Delete is a separate danger button. Details stack as a key/value list on a narrow screen. The status is one badge beside the title.
+- A published event sends only when Publishable's window job fires (`source` `scheduled`), the broadcast is still scheduled, and the job's `publish_at` still matches `scheduled_at`. Publishing a draft through Publishable does not send, and Send now enqueues delivery once.
+- Scheduling stores who scheduled it. The send re-checks that person can still send. Cancel also unpublishes the Publishable record. Schedule and unpublish each write the publishable clock and the broadcast status in one transaction. An unpublish or revise of a live Publishable record returns a scheduled broadcast to draft.
 - Notifications is pinned to `v0.11.0` and Flatpack to `v0.1.254` (`flat_pack ~> 0.1.254`). Admin is pinned to tag `v2.4.0` (the merge of RecordingStudio_admin #31).
 
 ## [0.1.0]

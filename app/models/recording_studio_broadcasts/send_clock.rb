@@ -8,6 +8,14 @@ module RecordingStudioBroadcasts
     # publish must not snapshot the audience again. A send already in progress
     # may re-enqueue delivery; that path claims each recipient once.
     def launch(recording, actor:, scheduled_at: nil)
+      unless sender_allowed?(recording, actor)
+        Rails.logger&.warn(
+          "RecordingStudioBroadcasts skipped send for recording #{recording.id}: " \
+          "#{actor&.id || 'no actor'} is not allowed to send"
+        )
+        return recording
+      end
+
       DeliverBroadcastJob.perform_later(recording, actor) if claim_send!(recording, actor:, scheduled_at:)
       recording
     end
@@ -64,13 +72,28 @@ module RecordingStudioBroadcasts
     # A Publishable publish from its own UI or API uses source "write" and must not send.
     # Only the window job (source "scheduled") sends, and only while the broadcast is still scheduled.
     def deliver_published(payload)
-      return unless payload[:source].to_s == "scheduled"
-      return unless payload[:recordable_type] == Broadcast.name
+      return unless scheduled_window?(payload)
 
       recording = RecordingStudio::Recording.find_by(id: payload[:recording_id])
       return if recording.nil? || recording.recordable.status != "scheduled"
 
-      launch(recording, actor: scheduling_actor(recording) || actor_from(payload))
+      launch(
+        recording,
+        actor: scheduling_actor(recording) || actor_from(payload),
+        scheduled_at: publish_clock(payload)
+      )
+    end
+
+    # The window job's publish_at must still be this broadcast's clock.
+    # A Publishable edit can queue an earlier job while status stays scheduled.
+    def scheduled_window?(payload)
+      payload[:source].to_s == "scheduled" &&
+        payload[:recordable_type] == Broadcast.name &&
+        publish_clock(payload).present?
+    end
+
+    def publish_clock(payload)
+      payload.dig(:current_state, :publish_at)&.utc&.iso8601
     end
 
     def clear_publishable!(recording, actor:)
@@ -82,6 +105,7 @@ module RecordingStudioBroadcasts
 
     # revise stores the scheduler on the schedule event. The window job emits with no actor.
     def scheduling_actor(recording)
+      # Recording Studio is Postgres-only, so this JSON lookup stays as metadata ->> 'source'.
       event = RecordingStudio::Event.where(recording_id: recording.id, action: "updated")
                                     .where("metadata ->> 'source' = ?", "schedule")
                                     .order(occurred_at: :desc)

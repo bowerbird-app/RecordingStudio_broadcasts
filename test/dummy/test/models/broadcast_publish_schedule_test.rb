@@ -14,6 +14,7 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     ActionMailer::Base.deliveries.clear
     @ann = create_user("ann@example.com")
     @bob = create_user("bob@example.com")
+    grant_sender!(@ann)
     @recording = create_broadcast
   end
 
@@ -153,16 +154,89 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     campaign.singleton_class.alias_method(:revise_before_failure_test!, :revise!)
     campaign.define_singleton_method(:revise!) { |*, **| raise ActiveRecord::RecordNotSaved, "stopped" }
 
-    assert_no_enqueued_jobs only: RecordingStudioPublishable::WindowTransitionJob do
-      assert_raises(ActiveRecord::RecordNotSaved) do
-        RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
-      end
+    assert_raises(ActiveRecord::RecordNotSaved) do
+      RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
     end
 
     assert_equal "draft", broadcast_status(@recording)
     assert_nil @recording.reload.current_publishable
+    assert_no_emails { perform_enqueued_jobs }
   ensure
     campaign.singleton_class.alias_method(:revise!, :revise_before_failure_test!)
+  end
+
+  test "an earlier publishable publish_at does not send a broadcast scheduled for later" do
+    later = 3.hours.from_now.change(usec: 0)
+    sooner = 1.hour.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at: later, actor: @ann)
+
+    RecordingStudioPublishable::Services::Publishables::Update.call(
+      parent_recording: @recording,
+      actor: @ann,
+      attributes: {
+        status: "scheduled",
+        publish_at: sooner.utc.iso8601,
+        time_zone: Time.zone.tzinfo.name
+      }
+    )
+
+    travel_to(sooner + 1.second) do
+      assert_no_emails { drain_due_jobs }
+    end
+
+    assert_equal "scheduled", broadcast_status(@recording)
+    assert_nil @recording.reload.recordable.sent_at
+    assert_equal later, @recording.recordable.scheduled_at
+  end
+
+  test "unpublishing a live publishable returns the scheduled broadcast to draft" do
+    at = 1.hour.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+    make_publishable_live!
+
+    RecordingStudioPublishable::Services::Publishables::Transition.call(
+      parent_recording: @recording, transition: "unpublish", actor: @ann
+    )
+
+    assert_equal "draft", broadcast_status(@recording)
+    assert_nil @recording.reload.recordable.scheduled_at
+    assert_nil @recording.recordable.sent_at
+  end
+
+  test "revising a live publishable returns the scheduled broadcast to draft" do
+    at = 1.hour.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+    make_publishable_live!
+
+    RecordingStudioPublishable::Services::Publishables::Update.call(
+      parent_recording: @recording,
+      actor: @ann,
+      attributes: { social_title: "Edited in Publishable" }
+    )
+
+    assert_equal "draft", broadcast_status(@recording)
+    assert_nil @recording.reload.recordable.scheduled_at
+    assert_nil @recording.recordable.sent_at
+  end
+
+  test "a scheduler who lost send access does not launch" do
+    at = 1.hour.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+    access = RecordingStudio::Access.find_by!(actor: @ann)
+    RecordingStudio::Access.where(id: access.id).update_all(role: "view")
+
+    log = StringIO.new
+    previous_logger = Rails.logger
+    Rails.logger = ActiveSupport::Logger.new(log)
+    travel_to(at + 1.minute) do
+      assert_no_emails { drain_due_jobs }
+    end
+
+    assert_equal "scheduled", broadcast_status(@recording)
+    assert_nil @recording.reload.recordable.sent_at
+    assert_includes log.string, @recording.id
+  ensure
+    Rails.logger = previous_logger if previous_logger
   end
 
   test "publish now enqueues delivery once" do
@@ -194,5 +268,19 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
   # The window job enqueues delivery when it runs, so one flush is not enough.
   def drain_due_jobs
     4.times { perform_enqueued_jobs(at: Time.current) }
+  end
+
+  def make_publishable_live!
+    RecordingStudioPublishable::Services::Publishables::Update.call(
+      parent_recording: @recording,
+      actor: @ann,
+      attributes: {
+        status: "published",
+        publish_at: 1.minute.ago.utc.iso8601,
+        time_zone: Time.zone.tzinfo.name
+      }
+    )
+    assert @recording.reload.current_publishable.currently_published?
+    assert_equal "scheduled", broadcast_status(@recording)
   end
 end
