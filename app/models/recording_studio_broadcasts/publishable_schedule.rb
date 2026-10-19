@@ -7,27 +7,33 @@ module RecordingStudioBroadcasts
     module_function
 
     def schedule_at(recording, at:, actor:)
-      unwrap!(RecordingStudioPublishable::Services::Publishables::Update.call(
-                parent_recording: recording,
-                actor:,
-                attributes: attributes_for(at)
-              ))
+      PublishableWrite.own_write do
+        unwrap!(RecordingStudioPublishable::Services::Publishables::Update.call(
+                  parent_recording: recording,
+                  actor:,
+                  attributes: attributes_for(at)
+                ))
+      end
     end
 
     def publish_now(recording, actor:)
-      unwrap!(RecordingStudioPublishable::Services::Publishables::Transition.call(
-                parent_recording: recording,
-                transition: "publish",
-                actor:
-              ))
+      PublishableWrite.own_write do
+        unwrap!(RecordingStudioPublishable::Services::Publishables::Transition.call(
+                  parent_recording: recording,
+                  transition: "publish",
+                  actor:
+                ))
+      end
     end
 
     def unpublish(recording, actor:)
-      unwrap!(RecordingStudioPublishable::Services::Publishables::Transition.call(
-                parent_recording: recording,
-                transition: "unpublish",
-                actor:
-              ))
+      PublishableWrite.own_write do
+        unwrap!(RecordingStudioPublishable::Services::Publishables::Transition.call(
+                  parent_recording: recording,
+                  transition: "unpublish",
+                  actor:
+                ))
+      end
     end
 
     def attributes_for(at)

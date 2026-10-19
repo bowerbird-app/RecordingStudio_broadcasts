@@ -191,9 +191,32 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     get "/published/#{child.id}/#{publishable.slug}"
 
     assert_response :success
+    assert_includes response.body, '<meta name="robots" content="noindex">'
+    assert_equal "", response.body.sub("<meta name=\"robots\" content=\"noindex\">", "").strip
     refute_includes response.body, "Secret launch title"
     refute_includes response.body, child.id
     refute_includes response.body, recording.id
+  end
+
+  test "the show page names who changed the send time in Publishable" do
+    recording = create_broadcast(actor: @admin)
+    editor = create_user("cara@example.com")
+    RecordingStudioBroadcasts.schedule(recording, at: 2.hours.from_now, actor: @admin)
+    RecordingStudioPublishable::Services::Publishables::Update.call(
+      parent_recording: recording,
+      actor: editor,
+      attributes: {
+        status: "scheduled",
+        publish_at: 4.hours.from_now.utc.iso8601,
+        time_zone: Time.zone.tzinfo.name
+      }
+    )
+    sign_in @admin
+
+    get "/admin/broadcasts/#{recording.id}"
+
+    assert_response :success
+    assert_includes response.body, "Returned to draft: send time changed in Publishable by cara@example.com"
   end
 
   test "an admin deletes a draft" do

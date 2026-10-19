@@ -165,34 +165,62 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     campaign.singleton_class.alias_method(:revise!, :revise_before_failure_test!)
   end
 
-  test "an earlier publishable publish_at does not send a broadcast scheduled for later" do
+  test "moving publish_at earlier in Publishable returns the broadcast to draft" do
     later = 3.hours.from_now.change(usec: 0)
     sooner = 1.hour.from_now.change(usec: 0)
     RecordingStudioBroadcasts.schedule(@recording, at: later, actor: @ann)
 
-    RecordingStudioPublishable::Services::Publishables::Update.call(
-      parent_recording: @recording,
-      actor: @ann,
-      attributes: {
-        status: "scheduled",
-        publish_at: sooner.utc.iso8601,
-        time_zone: Time.zone.tzinfo.name
-      }
+    edit_publishable!(status: "scheduled", publish_at: sooner.utc.iso8601)
+
+    assert_returned_to_draft_by!(editor)
+    travel_to(sooner + 1.second) { assert_no_emails { drain_due_jobs } }
+    travel_to(later + 1.second) { assert_no_emails { drain_due_jobs } }
+    assert_equal 0, ActionMailer::Base.deliveries.size
+  end
+
+  test "moving publish_at later in Publishable returns the broadcast to draft" do
+    sooner = 1.hour.from_now.change(usec: 0)
+    later = 4.hours.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at: sooner, actor: @ann)
+
+    edit_publishable!(status: "scheduled", publish_at: later.utc.iso8601)
+
+    assert_returned_to_draft_by!(editor)
+    travel_to(sooner + 1.second) { assert_no_emails { drain_due_jobs } }
+    travel_to(later + 1.second) { assert_no_emails { drain_due_jobs } }
+    assert_equal 0, ActionMailer::Base.deliveries.size
+  end
+
+  test "publishing now through Publishable returns the scheduled broadcast to draft" do
+    at = 2.hours.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+
+    RecordingStudioPublishable::Services::Publishables::Transition.call(
+      parent_recording: @recording, transition: "publish", actor: editor
     )
 
-    travel_to(sooner + 1.second) do
-      assert_no_emails { drain_due_jobs }
+    assert_returned_to_draft_by!(editor)
+    assert_no_enqueued_jobs(only: RecordingStudioBroadcasts::DeliverBroadcastJob)
+    travel_to(at + 1.second) { assert_no_emails { drain_due_jobs } }
+    assert_equal 0, ActionMailer::Base.deliveries.size
+  end
+
+  test "unpublishing or drafting through Publishable before it is live returns the broadcast to draft" do
+    %w[unpublish draft].each do |transition|
+      recording = create_broadcast
+      at = 2.hours.from_now.change(usec: 0)
+      RecordingStudioBroadcasts.schedule(recording, at:, actor: @ann)
+
+      RecordingStudioPublishable::Services::Publishables::Transition.call(
+        parent_recording: recording, transition:, actor: editor
+      )
+
+      assert_equal "draft", broadcast_status(recording)
+      assert_nil recording.reload.recordable.scheduled_at
+      assert_equal editor, publishable_change_event(recording).actor
+      travel_to(at + 1.second) { assert_no_emails { drain_due_jobs } }
     end
 
-    assert_equal "draft", broadcast_status(@recording)
-    assert_nil @recording.reload.recordable.sent_at
-    assert_nil @recording.recordable.scheduled_at
-
-    travel_to(later + 1.second) do
-      assert_no_emails { drain_due_jobs }
-    end
-
-    assert_equal "draft", broadcast_status(@recording)
     assert_equal 0, ActionMailer::Base.deliveries.size
   end
 
@@ -218,7 +246,7 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     assert_equal 2, ActionMailer::Base.deliveries.size
   end
 
-  test "two window jobs at the same time send once" do
+  test "duplicate window job sends once" do
     at = 2.hours.from_now.change(usec: 0)
 
     assert_enqueued_jobs 2, only: RecordingStudioPublishable::WindowTransitionJob do
@@ -235,36 +263,6 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     assert_equal "completed", broadcast_status(@recording)
     assert_equal 2, ActionMailer::Base.deliveries.size
     assert_equal 2, RecordingStudioBroadcasts::Recipient.where(recording_id: @recording.id).count
-  end
-
-  test "unpublishing a live publishable returns the scheduled broadcast to draft" do
-    at = 1.hour.from_now.change(usec: 0)
-    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
-    make_publishable_live!
-
-    RecordingStudioPublishable::Services::Publishables::Transition.call(
-      parent_recording: @recording, transition: "unpublish", actor: @ann
-    )
-
-    assert_equal "draft", broadcast_status(@recording)
-    assert_nil @recording.reload.recordable.scheduled_at
-    assert_nil @recording.recordable.sent_at
-  end
-
-  test "revising a live publishable returns the scheduled broadcast to draft" do
-    at = 1.hour.from_now.change(usec: 0)
-    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
-    make_publishable_live!
-
-    RecordingStudioPublishable::Services::Publishables::Update.call(
-      parent_recording: @recording,
-      actor: @ann,
-      attributes: { social_title: "Edited in Publishable" }
-    )
-
-    assert_equal "draft", broadcast_status(@recording)
-    assert_nil @recording.reload.recordable.scheduled_at
-    assert_nil @recording.recordable.sent_at
   end
 
   test "a scheduler who lost send access does not launch" do
@@ -318,17 +316,30 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     4.times { perform_enqueued_jobs(at: Time.current) }
   end
 
-  def make_publishable_live!
+  def editor
+    @cara ||= create_user("cara@example.com")
+  end
+
+  def edit_publishable!(attributes)
     RecordingStudioPublishable::Services::Publishables::Update.call(
       parent_recording: @recording,
-      actor: @ann,
-      attributes: {
-        status: "published",
-        publish_at: 1.minute.ago.utc.iso8601,
-        time_zone: Time.zone.tzinfo.name
-      }
+      actor: editor,
+      attributes: attributes.merge(time_zone: Time.zone.tzinfo.name)
     )
-    assert @recording.reload.current_publishable.currently_published?
-    assert_equal "scheduled", broadcast_status(@recording)
+  end
+
+  def assert_returned_to_draft_by!(actor)
+    assert_equal "draft", broadcast_status(@recording)
+    assert_nil @recording.reload.recordable.scheduled_at
+    assert_nil @recording.recordable.sent_at
+    assert_equal actor, publishable_change_event(@recording).actor
+    assert_equal "Returned to draft: send time changed in Publishable by #{actor.email}",
+                 RecordingStudioBroadcasts::BroadcastsHelper.publishable_return_notice(@recording)
+  end
+
+  def publishable_change_event(recording)
+    recording.events(actions: "updated").find do |event|
+      event.metadata.to_h.stringify_keys["source"] == "publishable_change"
+    end
   end
 end

@@ -31,6 +31,28 @@ module RecordingStudioBroadcasts
       BroadcastsHelper.schedule_state(recording, broadcast)
     end
 
+    def broadcast_publishable_return_notice(recording)
+      BroadcastsHelper.publishable_return_notice(recording)
+    end
+
+    def self.publishable_return_notice(recording)
+      return unless recording.recordable.status == "draft"
+
+      event = recording.events(actions: "updated", limit: 1).first
+      return unless event&.metadata.to_h.stringify_keys["source"] == "publishable_change"
+
+      "Returned to draft: send time changed in Publishable by #{editor_name(event.actor)}"
+    end
+
+    def self.editor_name(actor)
+      return "someone" if actor.nil?
+      return actor.name if actor.respond_to?(:name) && actor.name.present?
+      return actor.email if actor.respond_to?(:email) && actor.email.present?
+
+      "someone"
+    end
+    private_class_method :editor_name
+
     def broadcast_action_button(text, url, confirm: nil)
       data = { turbo_method: :post }
       data[:turbo_confirm] = confirm if confirm.present?

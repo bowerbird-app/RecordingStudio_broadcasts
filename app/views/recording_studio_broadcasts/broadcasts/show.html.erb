@@ -1,4 +1,7 @@
 <%= render layout: "recording_studio_admin/shared/page_shell" do %>
+  <% if (returned = broadcast_publishable_return_notice(@recording)) %>
+    <%= render FlatPack::Alert::Component.new(description: returned, style: :warning) %>
+  <% end %>
   <%= render "header",
         title: @broadcast.title,
         subtitle: @broadcast.subject,

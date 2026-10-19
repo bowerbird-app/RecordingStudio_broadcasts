@@ -66,20 +66,25 @@ module RecordingStudioBroadcasts
       Delivery.test_send(recording, actor:)
     end
 
-    def install_publish_delivery!
-      return if @publish_delivery_installed
-
-      @publish_delivery_installed = true
-      RecordingStudioPublishable.subscribe(:published) do |event|
-        Campaign.deliver_published(event.payload)
+    def subscribe_publishable_writes!
+      RecordingStudioPublishable.subscribe(:published) { |event| Campaign.deliver_published(event.payload) }
+      # Update runs this in-process, so a future send time is caught before any window job.
+      RecordingStudioPublishable.configuration.hooks.after_service do |service_class, result|
+        Campaign.note_external_publishable_write(service_class, result)
       end
-      # These fire when a live publishable is unpublished or edited. A future
-      # schedule is not live yet, so Publishable does not emit them for that edit.
+      # A future schedule is not live, so these do not fire for that edit.
       %i[unpublished revised].each do |name|
         RecordingStudioPublishable.subscribe(name) do |event|
           Campaign.withdraw_after_publishable_change(event.payload)
         end
       end
+    end
+
+    def install_publish_delivery!
+      return if @publish_delivery_installed
+
+      @publish_delivery_installed = true
+      subscribe_publishable_writes!
     end
   end
 end
