@@ -18,36 +18,12 @@ module RecordingStudioBroadcasts
       "#{state[:label]} · #{I18n.l(state[:time].in_time_zone, format: :long)}"
     end
 
-    PUBLISHABLE_TYPE = "RecordingStudioPublishable::Publishable"
-
-    def self.schedule_state(recording, broadcast)
+    def self.schedule_state(_recording, broadcast)
       if broadcast.sent_at.present?
         { label: "Sent", style: :success, time: broadcast.sent_at }
-      elsif broadcast.status == "scheduled"
-        time = publish_at_for(recording) || broadcast.scheduled_at
-        { label: "Scheduled", style: :info, time: time } if time.present?
-      end
-    end
-
-    # Prefer the preloaded publishable child so a table of broadcasts does not query per row.
-    def self.publish_at_for(recording)
-      publishable_for(recording)&.publish_at
-    end
-
-    def self.publishable_for(recording)
-      child = publishable_child(recording)
-      return if child.nil?
-
-      child.recordable
-    end
-
-    def self.publishable_child(recording)
-      children = recording.child_recordings
-      if children.loaded?
-        scope = RecordingStudioPublishable::TrashedAt.merge_active(recordable_type: PUBLISHABLE_TYPE)
-        children.find { |row| scope.all? { |key, value| row.public_send(key) == value } }
-      else
-        recording.publishable_child_recording
+      elsif broadcast.status == "scheduled" && broadcast.scheduled_at.present?
+        # The screen shows this broadcast's clock. A drifted publish_at is not the send time.
+        { label: "Scheduled", style: :info, time: broadcast.scheduled_at }
       end
     end
 

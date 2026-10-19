@@ -19,4 +19,7 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   root to: redirect("/admin")
+
+  # Publishable's public URL. Broadcasts registers a blank renderer for it.
+  mount RecordingStudioPublishable::Engine, at: "/"
 end

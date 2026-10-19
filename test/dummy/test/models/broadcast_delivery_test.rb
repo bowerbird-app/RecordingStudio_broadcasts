@@ -55,7 +55,9 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
     assert_equal "sent", row.reload.status
     assert_predicate row.notification_id, :present?
     assert_equal "completed", broadcast_status(@recording)
-    assert_no_emails { perform_enqueued_jobs { RecordingStudioBroadcasts.launch(@recording, actor: nil) } }
+    assert_no_emails do
+      assert_raises(ArgumentError) { RecordingStudioBroadcasts.launch(@recording, actor: nil) }
+    end
   end
 
   test "cancel skips the people not yet sent to and sends nothing more" do

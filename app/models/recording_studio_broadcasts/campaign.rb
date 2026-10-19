@@ -112,6 +112,7 @@ module RecordingStudioBroadcasts
     end
     private_class_method :claim_send!, :assert_action!, :assert_allowed!, :due?,
                          :raise_blank_schedule!, :actor_from, :clear_publishable!, :scheduling_actor,
-                         :sender_allowed?, :scheduled_window?, :publish_clock
+                         :sender_allowed?, :scheduled_window?, :publish_clock, :clock_matches?,
+                         :log_skipped_send, :release_mismatched_schedule!, :keeping_schedule?, :same_clock?
   end
 end

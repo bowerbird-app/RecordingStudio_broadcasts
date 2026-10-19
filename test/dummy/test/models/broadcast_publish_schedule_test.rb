@@ -184,9 +184,57 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
       assert_no_emails { drain_due_jobs }
     end
 
-    assert_equal "scheduled", broadcast_status(@recording)
+    assert_equal "draft", broadcast_status(@recording)
     assert_nil @recording.reload.recordable.sent_at
-    assert_equal later, @recording.recordable.scheduled_at
+    assert_nil @recording.recordable.scheduled_at
+
+    travel_to(later + 1.second) do
+      assert_no_emails { drain_due_jobs }
+    end
+
+    assert_equal "draft", broadcast_status(@recording)
+    assert_equal 0, ActionMailer::Base.deliveries.size
+  end
+
+  test "scheduling a live publishable stays scheduled and sends at that time" do
+    RecordingStudioPublishable::Services::Publishables::Transition.call(
+      parent_recording: @recording, transition: "publish", actor: @ann
+    )
+    assert @recording.reload.current_publishable.currently_published?
+
+    at = 2.hours.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+
+    assert_equal "scheduled", broadcast_status(@recording)
+    assert_equal at, @recording.reload.recordable.scheduled_at
+
+    travel_to(at + 1.second) do
+      assert_emails 2 do
+        drain_due_jobs
+      end
+    end
+
+    assert_equal "completed", broadcast_status(@recording)
+    assert_equal 2, ActionMailer::Base.deliveries.size
+  end
+
+  test "two window jobs at the same time send once" do
+    at = 2.hours.from_now.change(usec: 0)
+
+    assert_enqueued_jobs 2, only: RecordingStudioPublishable::WindowTransitionJob do
+      RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+      RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+    end
+
+    travel_to(at + 1.second) do
+      assert_emails 2 do
+        drain_due_jobs
+      end
+    end
+
+    assert_equal "completed", broadcast_status(@recording)
+    assert_equal 2, ActionMailer::Base.deliveries.size
+    assert_equal 2, RecordingStudioBroadcasts::Recipient.where(recording_id: @recording.id).count
   end
 
   test "unpublishing a live publishable returns the scheduled broadcast to draft" do

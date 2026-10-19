@@ -29,7 +29,7 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
 
     get "/admin/broadcasts/new"
     assert_response :success
-    assert_select "textarea[name='broadcast[body]'][class*='radius-md']"
+    assert_select "textarea[name='broadcast[body]']"
 
     get "/admin/screens/broadcasts/table"
     assert_response :success
@@ -94,7 +94,7 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     get "/admin/screens/broadcasts/table"
     assert_response :success
     assert_includes response.body, "October update"
-    assert_select "a[href='/admin/broadcasts/#{recording.id}']"
+    assert_select "a.underline[href='/admin/broadcasts/#{recording.id}']"
 
     get "/admin/broadcasts/#{recording.id}"
     assert_response :success
@@ -176,6 +176,20 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     end
     assert_includes recordings.map { |recording| RecordingStudioBroadcasts::BroadcastsHelper.schedule_text(recording) }.join,
                     "Scheduled"
+  end
+
+  test "a sent broadcast's public page reveals no title or uuid" do
+    recording = create_broadcast(actor: @admin, title: "Secret launch title")
+    perform_enqueued_jobs { RecordingStudioBroadcasts.publish_now(recording, actor: @admin) }
+    publishable = recording.reload.current_publishable
+    child = recording.publishable_child_recording
+
+    get "/published/#{child.id}/#{publishable.slug}"
+
+    assert_response :success
+    refute_includes response.body, "Secret launch title"
+    refute_includes response.body, child.id
+    refute_includes response.body, recording.id
   end
 
   test "an admin deletes a draft" do

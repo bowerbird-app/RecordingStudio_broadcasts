@@ -38,6 +38,14 @@ module RecordingStudioBroadcasts
 
     config.to_prepare do
       RecordingStudioBroadcasts.install_publish_delivery!
+      # A sent broadcast stays published so the withdrawal handler does not see :unpublished.
+      # The public page is a blank template, so /published/:uuid/:slug reveals nothing.
+      RecordingStudioPublishable.configuration.register_public_renderer(
+        "RecordingStudioBroadcasts::Broadcast",
+        controller: "recording_studio_broadcasts/blank_publications",
+        action: :show,
+        layout: "recording_studio_broadcasts/blank"
+      )
 
       RecordingStudio.register_recordable_type("RecordingStudioBroadcasts::Broadcast")
       RecordingStudioNotifications.register_notification_type(

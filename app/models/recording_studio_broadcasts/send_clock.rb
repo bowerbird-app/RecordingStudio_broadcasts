@@ -8,10 +8,12 @@ module RecordingStudioBroadcasts
     # publish must not snapshot the audience again. A send already in progress
     # may re-enqueue delivery; that path claims each recipient once.
     def launch(recording, actor:, scheduled_at: nil)
+      raise ArgumentError, "actor is required" if actor.nil?
+
       unless sender_allowed?(recording, actor)
         Rails.logger&.warn(
           "RecordingStudioBroadcasts skipped send for recording #{recording.id}: " \
-          "#{actor&.id || 'no actor'} is not allowed to send"
+          "#{actor.id} is not allowed to send"
         )
         return recording
       end
@@ -76,12 +78,15 @@ module RecordingStudioBroadcasts
 
       recording = RecordingStudio::Recording.find_by(id: payload[:recording_id])
       return if recording.nil? || recording.recordable.status != "scheduled"
+      # A Publishable edit can move publish_at off this broadcast's clock.
+      # The old job then matches nothing, so the row would stay scheduled on a past time.
+      # Draft it instead of overwriting that edit.
+      return release_mismatched_schedule!(recording, payload) unless clock_matches?(recording, payload)
 
-      launch(
-        recording,
-        actor: scheduling_actor(recording) || actor_from(payload),
-        scheduled_at: publish_clock(payload)
-      )
+      actor = scheduling_actor(recording) || actor_from(payload)
+      return log_skipped_send(recording, "no actor") if actor.nil?
+
+      launch(recording, actor:, scheduled_at: publish_clock(payload))
     end
 
     # The window job's publish_at must still be this broadcast's clock.
@@ -94,6 +99,14 @@ module RecordingStudioBroadcasts
 
     def publish_clock(payload)
       payload.dig(:current_state, :publish_at)&.utc&.iso8601
+    end
+
+    def clock_matches?(recording, payload)
+      recording.recordable.scheduled_at&.utc&.iso8601 == publish_clock(payload)
+    end
+
+    def log_skipped_send(recording, reason)
+      Rails.logger&.warn("RecordingStudioBroadcasts skipped send for recording #{recording.id}: #{reason}")
     end
 
     def clear_publishable!(recording, actor:)

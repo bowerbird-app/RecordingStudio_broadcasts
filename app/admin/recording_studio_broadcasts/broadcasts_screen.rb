@@ -29,7 +29,12 @@ module RecordingStudioBroadcasts
         view = context.view_context
         next title if view.nil?
 
-        view.link_to(title, context.routes.broadcast_path(row))
+        view.render(
+          FlatPack::Link::Component.new(
+            href: context.routes.broadcast_path(row),
+            class: "text-[var(--color-primary)] underline"
+          ).with_content(title)
+        )
       }
       column :subject, sortable: false, value: ->(row, _context) { row.recordable.subject }
       column :status, sortable: false, display: :badge,

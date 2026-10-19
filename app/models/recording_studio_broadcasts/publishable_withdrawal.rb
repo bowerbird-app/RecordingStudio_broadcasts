@@ -9,8 +9,29 @@ module RecordingStudioBroadcasts
 
       recording = RecordingStudio::Recording.find_by(id: payload[:recording_id])
       return if recording.nil? || recording.recordable.status != "scheduled"
+      # Scheduling a live publishable writes a future publish_at. That leaves
+      # the live window and emits unpublished. It is this broadcast's own clock.
+      return if keeping_schedule?(recording, payload)
 
       revise!(recording, actor: actor_from(payload), status: "draft", scheduled_at: nil)
+    end
+
+    # The window job's clock no longer matches. The broadcast cannot send, so it goes back to draft.
+    def release_mismatched_schedule!(recording, payload)
+      revise!(recording, actor: actor_from(payload), status: "draft", scheduled_at: nil)
+    end
+
+    def keeping_schedule?(recording, payload)
+      state = payload.fetch(:current_state, {})
+      return false unless state[:scheduled]
+
+      same_clock?(state[:publish_at], recording.recordable.scheduled_at)
+    end
+
+    def same_clock?(publish_at, scheduled_at)
+      return false if publish_at.blank? || scheduled_at.blank?
+
+      publish_at.utc.iso8601 == scheduled_at.utc.iso8601
     end
 
     def sender_allowed?(recording, actor)
