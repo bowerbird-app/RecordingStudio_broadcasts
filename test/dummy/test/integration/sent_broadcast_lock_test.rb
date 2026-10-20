@@ -101,7 +101,10 @@ class SentBroadcastLockTest < ActionDispatch::IntegrationTest
     calls = 0
     update = RecordingStudioPublishable::Services::Publishables::Update
 
-    update.stub(:call, ->(*_args, **_kwargs) { calls += 1 }) do
+    update.stub(:call, ->(*_args, **_kwargs) {
+      calls += 1
+      RecordingStudio::Services::BaseService::Result.new(success: true)
+    }) do
       result = RecordingStudioPublishable::Services::Publishables::Transition.call(
         parent_recording: sent, actor: @admin, transition: "unpublish"
       )
