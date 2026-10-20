@@ -31,7 +31,10 @@ class PublishableWriteTest < Minitest::Test
   end
 
   def test_own_write_requires_a_recording
-    assert_raises(ArgumentError) { RecordingStudioBroadcasts::PublishableWrite.own_write { nil } }
+    write = RecordingStudioBroadcasts::PublishableWrite
+
+    assert_raises(ArgumentError) { write.own_write { nil } }
+    assert_raises(ArgumentError) { write.own_write([nil]) }
   end
 
   def test_a_nested_own_write_nil_keeps_the_outer_recording

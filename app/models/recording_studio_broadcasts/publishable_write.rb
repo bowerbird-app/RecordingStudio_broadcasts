@@ -10,11 +10,12 @@ module RecordingStudioBroadcasts
     module_function
 
     def own_write(*recordings)
-      raise ArgumentError, "own_write requires a recording" if recordings.compact.empty?
+      ids = recordings.flatten.compact.map(&:id)
+      raise ArgumentError, "own_write requires a recording" if ids.empty?
 
       previous = Array(ActiveSupport::IsolatedExecutionState[KEY])
       begin
-        ActiveSupport::IsolatedExecutionState[KEY] = previous + recordings.flatten.map(&:id)
+        ActiveSupport::IsolatedExecutionState[KEY] = previous + ids
         yield
       ensure
         ActiveSupport::IsolatedExecutionState[KEY] = previous
