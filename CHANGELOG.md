@@ -5,6 +5,7 @@
 ### Added
 
 - A broadcast's send time is Recording Studio Publishable's `publish_at` (git tag `v0.9.1`). Scheduling stores that time. Publishable's `WindowTransitionJob` sends when it is due. Publishing with no future time sends immediately, the same as Send now. `sent_at` is set when sending starts, so a reschedule, a late job, or unpublishing before the time cannot send twice.
+- Once `sent_at` is set, Publishable update and transition writes are refused (pages, JSON, and API). Edit redirects to the broadcasts list. Edit and Delete are hidden on the admin resource. Cancel and completing a send still run.
 - The broadcast show page and the broadcasts table show that time and a Scheduled or Sent state with Flatpack components.
 - Unpublish returns a scheduled broadcast to draft and does not send it.
 

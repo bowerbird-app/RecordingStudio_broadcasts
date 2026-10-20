@@ -14,7 +14,8 @@
        { label: "Who gets it", value: broadcast_filter_summary(@broadcast) }
      ] %>
   <% if schedule %>
-    <% details << { label: "Sends at", value: l(schedule[:time].in_time_zone, format: :long) } %>
+    <% details << { label: @broadcast.sent_at.present? ? "Sent at" : "Sends at",
+                    value: l(schedule[:time].in_time_zone, format: :long) } %>
   <% end %>
   <%= render "key_values", rows: details %>
 

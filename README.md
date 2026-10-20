@@ -84,6 +84,8 @@ RecordingStudioNotificationsEmail.config.recipients.register("User", ->(user) { 
 
 The Broadcasts screen lists every broadcast. The detail page shows who gets it (Matching, Ready, Left out), the filters, and how sending is going. View access can open both. Sending, scheduling, cancelling, editing, test sends, and deleting need admin access. Only a draft can be deleted. A sent or cancelled broadcast stays as a record.
 
+Once `sent_at` is set, the broadcast is locked. Opening edit redirects to the broadcasts list with an alert. Edit and Delete on the admin resource are hidden and refused. Publishable cannot update that broadcast or run publish, schedule, unpublish, or draft, including SEO and social fields. That refusal is the same for Publishable's pages, its JSON responses, and its API. Cancel and completing a send still work: those writes are marked as Broadcasts' own Publishable write for that recording. A draft or a scheduled broadcast can still be edited. Direct `update!` or `update_columns`, revising the publishable child, and trash bypass this lock.
+
 Each admin gets one test email per broadcast. The test uses a fixed idempotency key, so asking again sends nothing and the page says so.
 
 The same commands are available in Ruby:
