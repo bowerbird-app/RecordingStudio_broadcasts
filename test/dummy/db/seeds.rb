@@ -93,16 +93,28 @@ end
 
 Current.actor = user
 begin
-  seed_broadcast.call("Draft notes", "Still writing", "This one stays a draft.")
+  seed_broadcast.call(
+    "Draft notes",
+    "Still writing the October note",
+    "A short note for people who joined this month. Not ready to send."
+  )
 
-  scheduled = seed_broadcast.call("October 24 send", "Scheduled product update", "This goes out on October 24.")
+  scheduled = seed_broadcast.call(
+    "October 24 send",
+    "Your October product update",
+    "Broadcasts are in. You can write an update, see who it reaches, and send it on a schedule."
+  )
   if scheduled.recordable.status == "draft"
     RecordingStudioBroadcasts.schedule(
       scheduled, at: Time.zone.parse("2026-10-24 15:00"), actor: user
     )
   end
 
-  sent = seed_broadcast.call("We shipped it", "What's new", "We shipped broadcasts.")
+  sent = seed_broadcast.call(
+    "We shipped it",
+    "What's new in October",
+    "We shipped broadcasts. This one has already gone out, so the send stays as a record."
+  )
   if sent.recordable.sent_at.blank? && sent.recordable.status == "draft"
     previous_adapter = ActiveJob::Base.queue_adapter
     ActiveJob::Base.queue_adapter = :inline

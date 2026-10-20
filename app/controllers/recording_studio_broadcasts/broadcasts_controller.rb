@@ -5,6 +5,8 @@ module RecordingStudioBroadcasts
     # The routes live on the admin engine, so its helpers must win over this isolated engine's empty set.
     include RecordingStudioAdmin::Engine.routes.url_helpers
 
+    include SentBroadcastEdit
+
     helper BroadcastsHelper
     helper_method :offered?
 
@@ -31,6 +33,8 @@ module RecordingStudioBroadcasts
     end
 
     def edit
+      return redirect_sent_broadcast if sent_broadcast?
+
       authorize_broadcasts!(:update)
       @broadcast = @recording.recordable
     end

@@ -78,6 +78,7 @@ module RecordingStudioBroadcasts
           Campaign.withdraw_after_publishable_change(event.payload)
         end
       end
+      SentPublishableLock.install!
     end
 
     def install_publish_delivery!
