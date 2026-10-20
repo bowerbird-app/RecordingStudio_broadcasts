@@ -140,6 +140,7 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "span[class*='badge-radius']", text: "Scheduled", count: 1
+    assert_includes response.body, "Sends at"
     assert_includes response.body, "October 24, 2026 15:00"
     assert_includes response.body, "Unpublish"
     assert_includes response.body, "Send now"
@@ -151,6 +152,8 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     get "/admin/broadcasts/#{sent.id}"
 
     assert_select "span[class*='badge-radius']", text: "Sent", count: 1
+    assert_includes response.body, "Sent at"
+    refute_includes response.body, "Sends at"
     assert_includes response.body, I18n.l(sent.reload.recordable.sent_at.in_time_zone, format: :long)
   end
 

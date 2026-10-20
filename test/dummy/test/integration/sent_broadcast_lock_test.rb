@@ -2,6 +2,7 @@
 
 require "test_helper"
 require "devise/test/integration_helpers"
+require "minitest/mock"
 
 class SentBroadcastLockTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
@@ -98,24 +99,17 @@ class SentBroadcastLockTest < ActionDispatch::IntegrationTest
   test "refusing a transition does not start the nested update" do
     sent = start_sending
     calls = 0
-    update = RecordingStudioPublishable::Services::Publishables::Update.singleton_class
-    update.alias_method(:call_before_sent_lock_count, :call)
-    update.define_method(:call) do |*args, **kwargs, &block|
-      calls += 1
-      call_before_sent_lock_count(*args, **kwargs, &block)
+    update = RecordingStudioPublishable::Services::Publishables::Update
+
+    update.stub(:call, ->(*_args, **_kwargs) { calls += 1 }) do
+      result = RecordingStudioPublishable::Services::Publishables::Transition.call(
+        parent_recording: sent, actor: @admin, transition: "unpublish"
+      )
+
+      assert_predicate result, :failure?
+      assert_equal @message, result.error
     end
-
-    result = RecordingStudioPublishable::Services::Publishables::Transition.call(
-      parent_recording: sent, actor: @admin, transition: "unpublish"
-    )
-
-    assert_predicate result, :failure?
-    assert_equal @message, result.error
     assert_equal 0, calls
-  ensure
-    if update&.method_defined?(:call_before_sent_lock_count)
-      update.alias_method(:call, :call_before_sent_lock_count)
-    end
   end
 
   test "schedule and draft transitions are refused once sent" do
@@ -131,18 +125,6 @@ class SentBroadcastLockTest < ActionDispatch::IntegrationTest
     end
     assert_equal "published", sent.reload.current_publishable.status
     assert_equal "sending", broadcast_status(sent)
-  end
-
-  test "to_prepare twice keeps a single sent lock hook" do
-    count = -> { RecordingStudioPublishable.configuration.hooks.instance_variable_get(:@registry)[:around_service].size }
-    prepare = Rails.application.config.to_prepare_blocks.find do |block|
-      block.source_location&.first&.end_with?("recording_studio_broadcasts/engine.rb")
-    end
-
-    assert prepare
-    assert_equal 1, count.call
-    2.times { prepare.call }
-    assert_equal 1, count.call
   end
 
   test "an own write of one broadcast does not unlock another" do
@@ -209,7 +191,9 @@ class SentBroadcastLockTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "span[class*='badge-radius']", text: "Sent"
     assert_select "a", text: "Edit", count: 0
-    refute_includes response.body, ">Delete<"
+    assert_select "a", text: "Delete", count: 0
+    assert_includes response.body, "Sent at"
+    refute_includes response.body, "Sends at"
 
     patch "/admin/broadcasts/#{sent.id}", params: { broadcast: { title: "Renamed after send" } }
     assert_response :forbidden

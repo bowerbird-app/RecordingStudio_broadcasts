@@ -7,9 +7,6 @@ module RecordingStudioBroadcasts
   # around_service, so a direct field edit and a nested transition write are the
   # same check. Refusing Transition before yielding means that nested Update never
   # starts. BaseService#failure is private, so the hook builds the public Result.
-  #
-  # v0.9.2 Transition does not define service_args (the base method returns {}).
-  # TransitionParent records the parent id so the lock can read service_args for both.
   module SentPublishableLock
     MESSAGE = "A sent broadcast cannot be changed."
 
@@ -18,25 +15,9 @@ module RecordingStudioBroadcasts
       RecordingStudioPublishable::Services::Publishables::Transition
     ].freeze
 
-    module TransitionParent
-      def initialize(parent_recording:, **)
-        @sent_lock_parent_recording_id = parent_recording&.id
-        super
-      end
-
-      private
-
-      def service_args
-        super.merge(parent_recording_id: @sent_lock_parent_recording_id)
-      end
-    end
-
     module_function
 
     def install!
-      transition = RecordingStudioPublishable::Services::Publishables::Transition
-      transition.prepend(TransitionParent) unless transition.ancestors.include?(TransitionParent)
-
       RecordingStudioPublishable.configuration.hooks.around_service do |service, inner|
         RecordingStudioBroadcasts::SentPublishableLock.refusal_for(service) || inner.call
       end
@@ -45,11 +26,18 @@ module RecordingStudioBroadcasts
     def refusal_for(service)
       return unless LOCKED_SERVICES.include?(service.class)
 
-      parent_recording_id = service.send(:service_args)[:parent_recording_id]
+      parent_recording_id = parent_recording_id_for(service)
       return if PublishableWrite.own_publishable_write?(parent_recording_id)
       return unless sent?(parent_recording_id)
 
       failure
+    end
+
+    # service_args and parent_recording are private in Publishable v0.9.2.
+    # Update puts parent_recording_id in service_args; Transition does not, so the
+    # private reader is the fallback. Upstream ask: a public parent_recording_id.
+    def parent_recording_id_for(service)
+      service.send(:service_args)[:parent_recording_id] || service.send(:parent_recording)&.id
     end
 
     def sent?(parent_recording_id)

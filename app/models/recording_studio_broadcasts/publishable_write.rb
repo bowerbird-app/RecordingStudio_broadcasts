@@ -10,6 +10,8 @@ module RecordingStudioBroadcasts
     module_function
 
     def own_write(*recordings)
+      raise ArgumentError, "own_write requires a recording" if recordings.empty?
+
       previous = Array(ActiveSupport::IsolatedExecutionState[KEY])
       ActiveSupport::IsolatedExecutionState[KEY] = previous + recordings.flatten.map(&:id)
       yield
