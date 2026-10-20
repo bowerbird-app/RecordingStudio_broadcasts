@@ -7,7 +7,7 @@ module RecordingStudioBroadcasts
     module_function
 
     def schedule_at(recording, at:, actor:)
-      PublishableWrite.own_write do
+      PublishableWrite.own_write(recording) do
         unwrap!(RecordingStudioPublishable::Services::Publishables::Update.call(
                   parent_recording: recording,
                   actor:,
@@ -17,7 +17,7 @@ module RecordingStudioBroadcasts
     end
 
     def publish_now(recording, actor:)
-      PublishableWrite.own_write do
+      PublishableWrite.own_write(recording) do
         unwrap!(RecordingStudioPublishable::Services::Publishables::Transition.call(
                   parent_recording: recording,
                   transition: "publish",
@@ -27,7 +27,7 @@ module RecordingStudioBroadcasts
     end
 
     def unpublish(recording, actor:)
-      PublishableWrite.own_write do
+      PublishableWrite.own_write(recording) do
         unwrap!(RecordingStudioPublishable::Services::Publishables::Transition.call(
                   parent_recording: recording,
                   transition: "unpublish",

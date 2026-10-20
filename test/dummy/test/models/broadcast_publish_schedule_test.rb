@@ -229,7 +229,7 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     later = 4.hours.from_now.change(usec: 0)
     RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
 
-    RecordingStudioBroadcasts::PublishableWrite.own_write do
+    RecordingStudioBroadcasts::PublishableWrite.own_write(@recording) do
       edit_publishable!(status: "scheduled", publish_at: later.utc.iso8601)
     end
 
@@ -429,7 +429,7 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
   end
 
   def make_publishable_live!
-    RecordingStudioBroadcasts::PublishableWrite.own_write do
+    RecordingStudioBroadcasts::PublishableWrite.own_write(@recording) do
       RecordingStudioPublishable::Services::Publishables::Update.call(
         parent_recording: @recording,
         actor: @ann,

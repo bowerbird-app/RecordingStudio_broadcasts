@@ -72,9 +72,11 @@ module RecordingStudioBroadcasts
     end
 
     def external_publishable_update?(service_class, result)
-      service_class == RecordingStudioPublishable::Services::Publishables::Update &&
-        result.respond_to?(:success?) && result.success? &&
-        !PublishableWrite.own_publishable_write?
+      return false unless service_class == RecordingStudioPublishable::Services::Publishables::Update
+      return false unless result.respond_to?(:success?) && result.success?
+
+      recording = broadcast_recording_for(result.value)
+      recording.nil? || !PublishableWrite.own_publishable_write?(recording)
     end
 
     def broadcast_recording_for(child)

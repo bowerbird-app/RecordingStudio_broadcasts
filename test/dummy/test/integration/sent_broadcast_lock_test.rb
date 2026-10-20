@@ -19,7 +19,7 @@ class SentBroadcastLockTest < ActionDispatch::IntegrationTest
 
   test "publishable services routes json and api refuse a sent broadcast" do
     sent = start_sending
-    RecordingStudioBroadcasts::PublishableWrite.own_write do
+    RecordingStudioBroadcasts::PublishableWrite.own_write(sent) do
       RecordingStudioPublishable::Services::Publishables::Update.call(
         parent_recording: sent, actor: @admin, attributes: { social_title: "Already sent card" }
       )
@@ -95,9 +95,73 @@ class SentBroadcastLockTest < ActionDispatch::IntegrationTest
     assert_predicate finished.reload.recordable.sent_at, :present?
   end
 
+  test "refusing a transition does not start the nested update" do
+    sent = start_sending
+    calls = 0
+    update = RecordingStudioPublishable::Services::Publishables::Update.singleton_class
+    update.alias_method(:call_before_sent_lock_count, :call)
+    update.define_method(:call) do |*args, **kwargs, &block|
+      calls += 1
+      call_before_sent_lock_count(*args, **kwargs, &block)
+    end
+
+    result = RecordingStudioPublishable::Services::Publishables::Transition.call(
+      parent_recording: sent, actor: @admin, transition: "unpublish"
+    )
+
+    assert_predicate result, :failure?
+    assert_equal @message, result.error
+    assert_equal 0, calls
+  ensure
+    if update&.method_defined?(:call_before_sent_lock_count)
+      update.alias_method(:call, :call_before_sent_lock_count)
+    end
+  end
+
+  test "schedule and draft transitions are refused once sent" do
+    sent = start_sending
+
+    %w[schedule draft].each do |transition|
+      result = RecordingStudioPublishable::Services::Publishables::Transition.call(
+        parent_recording: sent, actor: @admin, transition: transition
+      )
+
+      assert_predicate result, :failure?
+      assert_equal @message, result.error
+    end
+    assert_equal "published", sent.reload.current_publishable.status
+    assert_equal "sending", broadcast_status(sent)
+  end
+
+  test "to_prepare twice keeps a single sent lock hook" do
+    count = -> { RecordingStudioPublishable.configuration.hooks.instance_variable_get(:@registry)[:around_service].size }
+    prepare = Rails.application.config.to_prepare_blocks.find do |block|
+      block.source_location&.first&.end_with?("recording_studio_broadcasts/engine.rb")
+    end
+
+    assert prepare
+    assert_equal 1, count.call
+    2.times { prepare.call }
+    assert_equal 1, count.call
+  end
+
+  test "an own write of one broadcast does not unlock another" do
+    sent = start_sending
+    other = start_sending(title: "Other send")
+    result = RecordingStudioBroadcasts::PublishableWrite.own_write(other) do
+      RecordingStudioPublishable::Services::Publishables::Update.call(
+        parent_recording: sent, actor: @admin, attributes: { social_title: "Unlocked by the other write" }
+      )
+    end
+
+    assert_predicate result, :failure?
+    assert_equal @message, result.error
+    assert_nil sent.reload.current_publishable.social_title
+  end
+
   test "an own publishable write is allowed after sent_at is set" do
     sent = start_sending
-    result = RecordingStudioBroadcasts::PublishableWrite.own_write do
+    result = RecordingStudioBroadcasts::PublishableWrite.own_write(sent) do
       RecordingStudioPublishable::Services::Publishables::Update.call(
         parent_recording: sent, actor: @admin, attributes: { social_title: "Broadcasts itself" }
       )
@@ -144,7 +208,7 @@ class SentBroadcastLockTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "span[class*='badge-radius']", text: "Sent"
-    refute_includes response.body, ">Edit<"
+    assert_select "a", text: "Edit", count: 0
     refute_includes response.body, ">Delete<"
 
     patch "/admin/broadcasts/#{sent.id}", params: { broadcast: { title: "Renamed after send" } }
