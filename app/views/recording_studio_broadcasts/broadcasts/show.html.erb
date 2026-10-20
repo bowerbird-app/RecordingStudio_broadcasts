@@ -1,72 +1,92 @@
 <%= render layout: "recording_studio_admin/shared/page_shell" do %>
-  <%= render "header", title: @broadcast.title, subtitle: @broadcast.subject %>
-  <%= render broadcast_status_badge(@broadcast) %>
+  <% if (returned = broadcast_publishable_return_notice(@recording)) %>
+    <%= render FlatPack::Alert::Component.new(description: returned, style: :warning) %>
+  <% end %>
+  <%= render "header",
+        title: @broadcast.title,
+        subtitle: @broadcast.subject,
+        badge: broadcast_status_badge(@broadcast) %>
+  <% schedule = broadcast_schedule_state(@recording, @broadcast) %>
 
   <% details = [
        { label: "Subject", value: @broadcast.subject },
        { label: "Message", value: @broadcast.body.presence || "No message yet." },
        { label: "Who gets it", value: broadcast_filter_summary(@broadcast) }
      ] %>
-  <% if @broadcast.status == "scheduled" %>
-    <% details << { label: "Sends at", value: l(@broadcast.scheduled_at.in_time_zone, format: :long) } %>
+  <% if schedule %>
+    <% details << { label: "Sends at", value: l(schedule[:time].in_time_zone, format: :long) } %>
   <% end %>
-  <%= render FlatPack::Table::Component.new(data: details) do |table| %>
-    <% table.column(title: "Detail") { |row| row[:label] } %>
-    <% table.column(title: "Value") { |row| row[:value] } %>
-  <% end %>
+  <%= render "key_values", rows: details %>
 
   <%= render FlatPack::PageTitle::Component.new(title: "Who gets it", variant: :h2) %>
-  <% counts = [
-       { label: "Matching", count: @preview[:matching] },
-       { label: "Ready", count: @preview[:eligible] },
-       { label: "Left out", count: @preview[:excluded] }
-     ] %>
-  <%= render FlatPack::Table::Component.new(data: counts) do |table| %>
-    <% table.column(title: "People") { |row| row[:label] } %>
-    <% table.column(title: "Count") { |row| row[:count].to_s } %>
-  <% end %>
+  <%= render "key_values", rows: [
+        { label: "Matching", value: @preview[:matching].to_s },
+        { label: "Ready", value: @preview[:eligible].to_s },
+        { label: "Left out", value: @preview[:excluded].to_s }
+      ] %>
 
   <% if @delivery.any? %>
     <%= render FlatPack::PageTitle::Component.new(title: "Delivery", variant: :h2) %>
     <% delivery = RecordingStudioBroadcasts::Recipient::STATUS_LABELS.filter_map do |status, label|
-         { label: label, count: @delivery[status] } if @delivery.key?(status)
+         { label: label, value: @delivery[status].to_s } if @delivery.key?(status)
        end %>
-    <%= render FlatPack::Table::Component.new(data: delivery) do |table| %>
-      <% table.column(title: "Status") { |row| row[:label] } %>
-      <% table.column(title: "Count") { |row| row[:count].to_s } %>
-    <% end %>
+    <%= render "key_values", rows: delivery %>
   <% end %>
 
-  <%= render FlatPack::Grid::Component.new(cols: 4, gap: :sm) do %>
-    <% if offered?(:send) %>
-      <%= form_with url: send_message_broadcast_path(@recording), method: :post,
-                    data: { turbo_confirm: "Send this to #{@preview[:eligible]} people now?" } do %>
-        <%= render FlatPack::Button::Component.new(text: "Send now", type: "submit", style: :primary) %>
+  <% secondary = %i[test_send update cancel unpublish].select { |action| offered?(action) } %>
+  <% if offered?(:send) || secondary.any? || offered?(:delete) %>
+    <%= render FlatPack::Collection::Component.new(layout: :wrap, gap: :sm) do |row| %>
+      <% if offered?(:send) %>
+        <% row.with_item do %>
+          <%= render FlatPack::Button::Component.new(
+                text: "Send now",
+                style: :primary,
+                href: send_message_broadcast_path(@recording),
+                data: { turbo_method: :post, turbo_confirm: "Send this to #{@preview[:eligible]} people now?" }
+              ) %>
+        <% end %>
       <% end %>
-    <% end %>
-    <% if offered?(:test_send) %>
-      <%= form_with url: test_send_broadcast_path(@recording), method: :post do %>
-        <%= render FlatPack::Button::Component.new(text: "Send me a test", type: "submit") %>
+      <% if offered?(:test_send) %>
+        <% row.with_item do %>
+          <%= render broadcast_action_button("Send me a test", test_send_broadcast_path(@recording)) %>
+        <% end %>
       <% end %>
-    <% end %>
-    <% if offered?(:update) %>
-      <%= render FlatPack::Button::Component.new(text: "Edit", href: edit_broadcast_path(@recording)) %>
-    <% end %>
-    <% if offered?(:cancel) %>
-      <%= form_with url: cancel_broadcast_path(@recording), method: :post,
-                    data: { turbo_confirm: "Cancel this broadcast? People not yet emailed will not get it." } do %>
-        <%= render FlatPack::Button::Component.new(text: "Cancel", type: "submit") %>
+      <% if offered?(:update) %>
+        <% row.with_item do %>
+          <%= render FlatPack::Button::Component.new(text: "Edit", href: edit_broadcast_path(@recording)) %>
+        <% end %>
       <% end %>
-    <% end %>
-    <% if offered?(:delete) %>
-      <%= form_with url: broadcast_path(@recording), method: :delete,
-                    data: { turbo_confirm: "Delete this draft?" } do %>
-        <%= render FlatPack::Button::Component.new(text: "Delete", type: "submit", style: :danger) %>
+      <% if offered?(:cancel) %>
+        <% row.with_item do %>
+          <%= render broadcast_action_button(
+                "Cancel", cancel_broadcast_path(@recording),
+                confirm: "Cancel this broadcast? People not yet emailed will not get it."
+              ) %>
+        <% end %>
+      <% end %>
+      <% if offered?(:unpublish) %>
+        <% row.with_item do %>
+          <%= render broadcast_action_button(
+                "Unpublish", unpublish_broadcast_path(@recording),
+                confirm: "Unpublish this broadcast? It will not be sent."
+              ) %>
+        <% end %>
+      <% end %>
+      <% if offered?(:delete) %>
+        <% row.with_item do %>
+          <%= render FlatPack::Button::Component.new(
+                text: "Delete",
+                style: :danger,
+                href: broadcast_path(@recording),
+                data: { turbo_method: :delete, turbo_confirm: "Delete this draft?" }
+              ) %>
+        <% end %>
       <% end %>
     <% end %>
   <% end %>
 
   <% if offered?(:schedule) %>
+    <%= render FlatPack::PageTitle::Component.new(title: "Schedule", variant: :h2) %>
     <%= form_with url: schedule_broadcast_path(@recording), method: :post do %>
       <%= render FlatPack::Grid::Component.new(cols: 1, gap: :sm) do %>
         <%= render FlatPack::DateTimeInput::Component.new(

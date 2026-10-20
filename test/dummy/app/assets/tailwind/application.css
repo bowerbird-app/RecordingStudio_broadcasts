@@ -14,3 +14,8 @@
 
 /* Include the engine's views in the Tailwind build */
 @source "../../../../../app/views/**/*.erb";
+
+/* The rounded theme pills every control. A message stays Flatpack's default radius. */
+[data-theme="rounded"] textarea.flat-pack-input {
+  --form-control-radius: var(--radius-md);
+}

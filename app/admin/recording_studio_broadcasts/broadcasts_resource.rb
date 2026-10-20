@@ -19,6 +19,8 @@ module RecordingStudioBroadcasts
                   url: ->(recording, context) { context.routes.send_message_broadcast_path(recording) }
     action :schedule, text: "Schedule", method: :post, required_role: :admin,
                       url: ->(recording, context) { context.routes.schedule_broadcast_path(recording) }
+    action :unpublish, text: "Unpublish", method: :post, required_role: :admin,
+                       url: ->(recording, context) { context.routes.unpublish_broadcast_path(recording) }
     action :cancel, text: "Cancel", method: :post, required_role: :admin,
                     url: ->(recording, context) { context.routes.cancel_broadcast_path(recording) }
     action :test_send, text: "Send me a test", method: :post, required_role: :admin,

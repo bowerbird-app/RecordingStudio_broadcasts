@@ -83,3 +83,37 @@ puts "Seeded: Workspace '#{workspace.name}' with root recording ##{root_recordin
 puts "Seeded: Workspace '#{accessible_workspace.name}' with root recording ##{accessible_root_recording.id}"
 puts "Seeded: Workspace '#{private_workspace.name}' with root recording ##{private_root_recording.id}"
 puts "Seeded: Folder '#{folder.name}' and page '#{page.title}'"
+
+seed_broadcast = lambda do |title, subject, body|
+  recordings = RecordingStudioBroadcasts::Campaign.recordings(admin_root_recording).includes(:recordable)
+  recordings.detect { |row| row.recordable.title == title } || RecordingStudioBroadcasts::Campaign.create(
+    admin_root_recording, actor: user, title:, subject:, body:
+  )
+end
+
+Current.actor = user
+begin
+  seed_broadcast.call("Draft notes", "Still writing", "This one stays a draft.")
+
+  scheduled = seed_broadcast.call("October 24 send", "Scheduled product update", "This goes out on October 24.")
+  if scheduled.recordable.status == "draft"
+    RecordingStudioBroadcasts.schedule(
+      scheduled, at: Time.zone.parse("2026-10-24 15:00"), actor: user
+    )
+  end
+
+  sent = seed_broadcast.call("We shipped it", "What's new", "We shipped broadcasts.")
+  if sent.recordable.sent_at.blank? && sent.recordable.status == "draft"
+    previous_adapter = ActiveJob::Base.queue_adapter
+    ActiveJob::Base.queue_adapter = :inline
+    begin
+      RecordingStudioBroadcasts.publish_now(sent, actor: user)
+    ensure
+      ActiveJob::Base.queue_adapter = previous_adapter
+    end
+  end
+ensure
+  Current.actor = previous_actor
+end
+
+puts "Seeded: draft, scheduled (October 24, 2026 15:00), and sent broadcasts"

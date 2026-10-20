@@ -18,14 +18,25 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_admin.git
-  revision: 10cefdf61198504d3c445536f769b64ac923bf2b
-  tag: v2.3.3
+  revision: 0f1a26ebc3826b5e522f96e83690042e2f61bbf4
+  tag: v2.4.0
   specs:
-    recording_studio_admin (2.3.0)
-      flat_pack (~> 0.1.207)
+    recording_studio_admin (2.4.0)
+      flat_pack (~> 0.1.254)
       rails (~> 8.1.0)
       recording_studio_accessible (~> 0.6)
       recording_studio_trashable (~> 0.10)
+
+GIT
+  remote: https://github.com/bowerbird-app/RecordingStudio_attachable.git
+  revision: a63cd3ab6fda6019fa0b700ce27abfd1b095b8ef
+  tag: v0.20.0
+  specs:
+    recording_studio_attachable (0.20.0)
+      flat_pack (>= 0.1.213)
+      rails (~> 8.1.0)
+      recording_studio (~> 4.2)
+      recording_studio_metrics (>= 0.3.0, < 0.4)
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_cache.git
@@ -47,11 +58,11 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_notifications.git
-  revision: ffb790f0160cf7d30b17200cd39555992451cb23
-  tag: v0.10.0
+  revision: ab174ac6f14111fcb8524af528ee198a4206d3b3
+  tag: v0.11.0
   specs:
-    recording_studio_notifications (0.10.0)
-      flat_pack
+    recording_studio_notifications (0.11.0)
+      flat_pack (~> 0.1.254)
       rails (~> 8.1.0)
       recording_studio (~> 4.2)
       recording_studio_accessible
@@ -67,6 +78,16 @@ GIT
       rails (~> 8.1.0)
       recording_studio (~> 4.2)
       recording_studio_notifications (>= 0.10.0, < 1)
+
+GIT
+  remote: https://github.com/bowerbird-app/RecordingStudio_publishable.git
+  revision: 52e05f838308ef807349ce1180cbce16bd0e4835
+  tag: v0.9.1
+  specs:
+    recording_studio_publishable (0.9.0)
+      rails (~> 8.1.0)
+      recording_studio (~> 4.2)
+      view_component (>= 3.0, < 5.0)
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_root_switchable.git
@@ -94,10 +115,10 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/flatpack.git
-  revision: d639126d2b0a06d1b3b6b6177a731488f35c149b
-  tag: v0.1.251
+  revision: a17074f91915f7b52ffc755a1411e186bd9e20e7
+  tag: v0.1.254
   specs:
-    flat_pack (0.1.251)
+    flat_pack (0.1.254)
       pagy (~> 9.0)
       rails (>= 7.1, < 9)
       tailwind_merge (~> 0.13)
@@ -106,14 +127,16 @@ GIT
 PATH
   remote: .
   specs:
-    recording_studio_broadcasts (0.1.0)
-      flat_pack (~> 0.1.207)
+    recording_studio_broadcasts (0.2.0)
+      flat_pack (~> 0.1.254)
       rails (~> 8.1.0)
       recording_studio (~> 4.7)
       recording_studio_accessible (~> 0.18)
-      recording_studio_admin (>= 2.3, < 2.4)
-      recording_studio_notifications (>= 0.10.0, < 0.11)
+      recording_studio_admin (>= 2.4, < 2.5)
+      recording_studio_attachable (>= 0.15, < 0.21)
+      recording_studio_notifications (>= 0.11.0, < 0.12)
       recording_studio_notifications_email (>= 0.3.15, < 0.4)
+      recording_studio_publishable (>= 0.9.0, < 0.10)
 
 GEM
   remote: https://rubygems.org/
@@ -411,11 +434,13 @@ DEPENDENCIES
   recording_studio!
   recording_studio_accessible!
   recording_studio_admin!
+  recording_studio_attachable!
   recording_studio_broadcasts!
   recording_studio_cache!
   recording_studio_metrics!
   recording_studio_notifications!
   recording_studio_notifications_email!
+  recording_studio_publishable!
   recording_studio_root_switchable!
   recording_studio_trashable!
   rubocop
@@ -450,7 +475,7 @@ CHECKSUMS
   drb (2.2.3) sha256=0b00d6fdb50995fe4a45dea13663493c841112e4068656854646f418fda13373
   erb (6.0.7) sha256=c5ca6dc25b0ef974a44dc8f59fe847577122483b1968a38dec305c60bf91ee92
   erubi (1.13.1) sha256=a082103b0885dbc5ecf1172fede897f9ebdb745a4b97a5e8dc63953db1ee4ad9
-  flat_pack (0.1.251)
+  flat_pack (0.1.254)
   globalid (1.4.0) sha256=037f12fbf1d9d7a014d501c2d5c77356fd4ddd96d7a7991d6700bba96706f427
   i18n (1.15.2) sha256=00f9eb62412fe593b2a65a97daa75300d37abb8f7202ec748e94b6d46a9dd1b5
   io-console (0.9.4) sha256=a403304f32928ee85e56d457b4612ca43f2703b561a3258844992bd24085fbb1
@@ -501,12 +526,14 @@ CHECKSUMS
   rdoc (8.1.0) sha256=befc37880a5cfd36dcb176c748b5fd5ee39dd3536a75e81824e4972ce230f60a
   recording_studio (4.7.0)
   recording_studio_accessible (0.20.0)
-  recording_studio_admin (2.3.0)
-  recording_studio_broadcasts (0.1.0)
+  recording_studio_admin (2.4.0)
+  recording_studio_attachable (0.20.0)
+  recording_studio_broadcasts (0.2.0)
   recording_studio_cache (0.5.0)
   recording_studio_metrics (0.3.0)
-  recording_studio_notifications (0.10.0)
+  recording_studio_notifications (0.11.0)
   recording_studio_notifications_email (0.3.15)
+  recording_studio_publishable (0.9.0)
   recording_studio_root_switchable (0.9.4)
   recording_studio_trashable (0.11.0)
   regexp_parser (2.13.1) sha256=5aedb6b7c35688f51e86eef17a15374dfd287c83f4ca644b2c5f3ec50a33b44b

@@ -5,11 +5,7 @@ module RecordingStudioBroadcasts
     key "broadcasts"
     icon :megaphone
     title "Broadcasts"
-    # Admin tables have no empty-state slot, so the subtitle carries it.
-    subtitle do |context|
-      parent = context.access_recording
-      parent && Campaign.recordings(parent).exists? ? "Product updates sent by email" : "No broadcasts yet."
-    end
+    subtitle "Product updates sent by email"
 
     button :new_broadcast, text: "New broadcast", style: :primary,
                            url: ->(context) { context.routes.new_broadcast_path },
@@ -22,15 +18,31 @@ module RecordingStudioBroadcasts
       false
     end
 
-    query { |context| Campaign.recordings(context.access_recording).includes(:recordable) }
+    query do |context|
+      Campaign.recordings(context.access_recording).includes(:recordable).preload(child_recordings: :recordable)
+    end
 
     table do
       title "All broadcasts"
-      column :title, sortable: false, value: ->(row, _context) { row.recordable.title }
+      column :title, sortable: false, value: lambda { |row, context|
+        title = row.recordable.title
+        view = context.view_context
+        next title if view.nil?
+
+        view.render(
+          FlatPack::Link::Component.new(
+            href: context.routes.broadcast_path(row),
+            class: "text-[var(--color-primary)] underline"
+          ).with_content(title)
+        )
+      }
       column :subject, sortable: false, value: ->(row, _context) { row.recordable.subject }
       column :status, sortable: false, display: :badge,
                       value: ->(row, _context) { Campaign::STATUS_LABELS.fetch(row.recordable.status) },
                       display_options: ->(row) { { style: BroadcastsHelper::STATUS_STYLES.fetch(row.recordable.status) } }
+      column :sends_at, title: "Sends at", sortable: false, value: lambda { |row, _context|
+        BroadcastsHelper.schedule_text(row)
+      }
       column :created_at, title: "Created"
       admin_action "broadcasts.show", as: :open
       default_sort :created_at, direction: :desc

@@ -19,6 +19,9 @@ module RecordingStudioBroadcasts
       "cancelled" => "Cancelled"
     }.freeze
 
+    extend SendClock
+    extend PublishableWithdrawal
+
     module_function
 
     def recordings(parent_recording)
@@ -32,6 +35,7 @@ module RecordingStudioBroadcasts
         schedule: editable,
         test_send: editable,
         send: TRANSITIONS.fetch(status).include?("sending"),
+        unpublish: status == "scheduled",
         cancel: TRANSITIONS.fetch(status).include?("cancelled"),
         delete: status == "draft"
       }.select { |_action, offered| offered }.keys
@@ -58,29 +62,9 @@ module RecordingStudioBroadcasts
       revise!(recording, actor:, **attributes.slice(*CONTENT))
     end
 
-    def launch(recording, actor:, scheduled_at: nil)
-      launched = recording.with_lock do
-        broadcast = recording.recordable
-        next false unless due?(broadcast, scheduled_at)
-        next broadcast.status == "sending" unless EDITABLE.include?(broadcast.status)
-
-        Audience.snapshot!(recording)
-        revise!(recording, actor:, status: "sending")
-        true
-      end
-      DeliverBroadcastJob.perform_later(recording, actor) if launched
-      recording
-    end
-
-    def schedule(recording, at:, actor:)
-      scheduled_at = at&.utc
-      revise!(recording, actor:, status: "scheduled", scheduled_at:)
-      ScheduledBroadcastJob.set(wait_until: scheduled_at).perform_later(recording, scheduled_at.iso8601, actor)
-      recording
-    end
-
     def cancel(recording, actor:)
       recording.with_lock do
+        clear_publishable!(recording, actor:)
         revise!(recording, actor:, status: "cancelled")
         Recipient.where(recording_id: recording.id, status: "pending")
                  .update_all(status: "skipped", skip_reason: "cancelled", updated_at: Time.current)
@@ -94,16 +78,25 @@ module RecordingStudioBroadcasts
       end
     end
 
-    def revise!(recording, actor:, status: nil, **changes)
+    def revise!(recording, actor:, status: nil, metadata: {}, **changes)
       recording.with_lock do
         from = recording.recordable.status
         to = (status || from).to_s
         assert_allowed!(from, to, editing: changes.any?)
 
-        recording.parent_recording.revise(recording, actor:) do |broadcast|
+        recording.parent_recording.revise(recording, actor:, metadata:) do |broadcast|
           broadcast.assign_attributes(changes.merge(status: to))
         end
       end
+    end
+
+    def assert_action!(recording, action)
+      # revise replaces the recordable, so a caller holding the recording still
+      # has the previous snapshot cached until this reload.
+      status = recording.reload.recordable.status
+      return if actions_for(status).include?(action)
+
+      raise InvalidTransition, "A #{status} broadcast cannot be #{action.to_s.tr('_', ' ')}"
     end
 
     def assert_allowed!(from, to, editing:)
@@ -117,6 +110,12 @@ module RecordingStudioBroadcasts
     def due?(broadcast, scheduled_at)
       scheduled_at.nil? || (broadcast.status == "scheduled" && broadcast.scheduled_at.utc.iso8601 == scheduled_at)
     end
-    private_class_method :assert_allowed!, :due?
+    private_class_method :claim_send!, :assert_action!, :assert_allowed!, :due?,
+                         :raise_blank_schedule!, :actor_from, :clear_publishable!, :scheduling_actor,
+                         :sender_allowed?, :scheduled_window?, :publish_clock, :clock_matches?,
+                         :log_skipped_send, :release_mismatched_schedule!, :keeping_schedule?, :same_clock?,
+                         :external_publishable_update?, :broadcast_recording_for, :send_clock_left?,
+                         :drafted?, :editor_for, :publishable_update?, :return_to_draft!, :draft_or_retry!,
+                         :log_draft_failure, :enqueue_reconcile
   end
 end

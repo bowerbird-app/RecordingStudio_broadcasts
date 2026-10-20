@@ -9,4 +9,13 @@
 <% if alert.present? %>
   <%= render FlatPack::Alert::Component.new(description: alert, style: :danger) %>
 <% end %>
-<%= render FlatPack::PageTitle::Component.new(title: title, subtitle: local_assigns[:subtitle]) %>
+<% badge = local_assigns[:badge] %>
+<% subtitle = local_assigns[:subtitle] %>
+<% if badge %>
+  <div class="flex flex-wrap items-start gap-2">
+    <%= render FlatPack::PageTitle::Component.new(title: title, subtitle: subtitle) %>
+    <%= render badge %>
+  </div>
+<% else %>
+  <%= render FlatPack::PageTitle::Component.new(title: title, subtitle: subtitle) %>
+<% end %>

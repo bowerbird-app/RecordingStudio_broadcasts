@@ -3,16 +3,26 @@
 require "test_helper"
 
 class BroadcastDeliveryTest < ActiveSupport::TestCase
+  # WindowTransitionJob emits after the surrounding transaction commits.
+  # The fixture transaction would swallow that, so these tests commit.
+  self.use_transactional_tests = false
+
+  include ActiveSupport::Testing::TimeHelpers
+
   Campaign = RecordingStudioBroadcasts::Campaign
   Delivery = RecordingStudioBroadcasts::Delivery
   Recipient = RecordingStudioBroadcasts::Recipient
 
   setup do
     reset_tables!
+    ActionMailer::Base.deliveries.clear
     @ann = create_user("ann@example.com")
     @bob = create_user("bob@example.com")
+    grant_sender!(@ann)
     @recording = create_broadcast
   end
+
+  teardown { reset_tables! }
 
   test "launch emails each ready person once and completes" do
     assert_emails 2 do
@@ -45,12 +55,14 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
     assert_equal "sent", row.reload.status
     assert_predicate row.notification_id, :present?
     assert_equal "completed", broadcast_status(@recording)
-    assert_no_emails { perform_enqueued_jobs { RecordingStudioBroadcasts.launch(@recording, actor: nil) } }
+    assert_no_emails do
+      assert_raises(ArgumentError) { RecordingStudioBroadcasts.launch(@recording, actor: nil) }
+    end
   end
 
   test "cancel skips the people not yet sent to and sends nothing more" do
-    RecordingStudioBroadcasts.launch(@recording, actor: nil)
-    RecordingStudioBroadcasts.cancel(@recording, actor: nil)
+    RecordingStudioBroadcasts.launch(@recording, actor: @ann)
+    RecordingStudioBroadcasts.cancel(@recording, actor: @ann)
 
     assert_no_emails { perform_enqueued_jobs }
     assert_equal [ %w[skipped cancelled] ] * 2, Recipient.where(recording_id: @recording.id).pluck(:status, :skip_reason)
@@ -91,17 +103,21 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
   end
 
   test "the scheduled job launches at the latest schedule and the superseded job does nothing" do
-    first = 1.hour.from_now
-    latest = 2.hours.from_now
+    first = 1.hour.from_now.change(usec: 0)
+    latest = 2.hours.from_now.change(usec: 0)
     RecordingStudioBroadcasts.schedule(@recording, at: first, actor: @ann)
     RecordingStudioBroadcasts.schedule(@recording, at: latest, actor: @ann)
 
-    perform_enqueued_jobs(only: RecordingStudioBroadcasts::ScheduledBroadcastJob, at: first + 1.minute)
-    assert_equal "scheduled", broadcast_status(@recording)
-    assert_no_enqueued_jobs(only: RecordingStudioBroadcasts::DeliverBroadcastJob)
+    travel_to(first + 1.minute) do
+      perform_enqueued_jobs(only: RecordingStudioPublishable::WindowTransitionJob, at: Time.current)
+      assert_equal "scheduled", broadcast_status(@recording)
+      assert_no_enqueued_jobs(only: RecordingStudioBroadcasts::DeliverBroadcastJob)
+    end
 
-    perform_enqueued_jobs(only: RecordingStudioBroadcasts::ScheduledBroadcastJob, at: latest + 1.minute)
-    assert_equal "sending", broadcast_status(@recording)
+    travel_to(latest + 1.minute) do
+      perform_enqueued_jobs(only: RecordingStudioPublishable::WindowTransitionJob, at: Time.current)
+      assert_equal "sending", broadcast_status(@recording)
+    end
     assert_enqueued_with(job: RecordingStudioBroadcasts::DeliverBroadcastJob, args: [ @recording, @ann ])
   end
 end

@@ -22,11 +22,13 @@ Gem::Specification.new do |spec|
     Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   end
 
-  spec.add_dependency "flat_pack", "~> 0.1.207"
+  spec.add_dependency "flat_pack", "~> 0.1.254"
   spec.add_dependency "rails", "~> 8.1.0"
   spec.add_dependency "recording_studio", "~> 4.7"
   spec.add_dependency "recording_studio_accessible", "~> 0.18"
-  spec.add_dependency "recording_studio_admin", ">= 2.3", "< 2.4"
-  spec.add_dependency "recording_studio_notifications", ">= 0.10.0", "< 0.11"
+  spec.add_dependency "recording_studio_admin", ">= 2.4", "< 2.5"
+  spec.add_dependency "recording_studio_attachable", ">= 0.15", "< 0.21"
+  spec.add_dependency "recording_studio_notifications", ">= 0.11.0", "< 0.12"
   spec.add_dependency "recording_studio_notifications_email", ">= 0.3.15", "< 0.4"
+  spec.add_dependency "recording_studio_publishable", ">= 0.9.0", "< 0.10"
 end

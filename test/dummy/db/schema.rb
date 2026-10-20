@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_17_033910) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_060009) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -61,6 +61,44 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_033910) do
     t.check_constraint "accepted_at IS NULL OR revoked_at IS NULL", name: "access_invitations_not_accepted_and_revoked"
   end
 
+  create_table "recording_studio_access_request_intents", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "recording_id", null: false
+    t.uuid "user_id", null: false
+    t.uuid "otp_challenge_id", null: false
+    t.string "email", null: false
+    t.string "role"
+    t.string "action"
+    t.datetime "expires_at", null: false
+    t.datetime "fulfilled_at"
+    t.datetime "created_at", null: false
+    t.string "submitted_name"
+    t.index ["recording_id"], name: "index_recording_studio_access_request_intents_on_recording_id"
+    t.check_constraint "action IS NULL OR char_length(action::text) <= 120", name: "recording_studio_access_request_intents_action_length"
+    t.check_constraint "char_length(email::text) <= 255", name: "recording_studio_access_request_intents_email_length"
+    t.check_constraint "submitted_name IS NULL OR char_length(submitted_name::text) <= 120", name: "recording_studio_access_request_intents_name_length"
+  end
+
+  create_table "recording_studio_access_requests", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "actor_type", null: false
+    t.uuid "actor_id", null: false
+    t.string "role"
+    t.string "action"
+    t.text "message"
+    t.string "status", default: "pending", null: false
+    t.uuid "access_recording_id"
+    t.text "review_note"
+    t.datetime "created_at", null: false
+    t.jsonb "gate_metadata", default: {}, null: false
+    t.uuid "target_recording_id", null: false
+    t.string "pending_key"
+    t.index ["actor_type", "actor_id"], name: "index_recording_studio_access_requests_on_actor"
+    t.index ["pending_key"], name: "index_recording_studio_access_requests_one_pending", unique: true, where: "(pending_key IS NOT NULL)"
+    t.check_constraint "action IS NULL OR char_length(action::text) <= 120", name: "recording_studio_access_requests_action_length"
+    t.check_constraint "message IS NULL OR char_length(message) <= 2000", name: "recording_studio_access_requests_message_length"
+    t.check_constraint "review_note IS NULL OR char_length(review_note) <= 2000", name: "recording_studio_access_requests_note_length"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'approved'::character varying, 'denied'::character varying]::text[])", name: "recording_studio_access_requests_status"
+  end
+
   create_table "recording_studio_access_rules", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "action", null: false
     t.string "audience", null: false
@@ -92,11 +130,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_033910) do
     t.datetime "updated_at", null: false
     t.index ["recording_id", "recipient_type", "recipient_id"], name: "idx_rs_broadcast_recipients_unique", unique: true
     t.index ["recording_id", "status"], name: "idx_rs_broadcast_recipients_status"
-    t.check_constraint "skip_reason IS NULL OR (skip_reason::text = ANY (ARRAY['preference'::character varying, 'suppressed'::character varying, 'cancelled'::character varying]::text[]))", name: "rs_broadcast_recipients_skip_reason"
+    t.check_constraint "skip_reason IS NULL OR (skip_reason::text = ANY (ARRAY['preference'::character varying::text, 'suppressed'::character varying::text, 'cancelled'::character varying::text]))", name: "rs_broadcast_recipients_skip_reason"
     t.check_constraint "status::text <> 'sending'::text OR claimed_at IS NOT NULL", name: "rs_broadcast_recipients_sending"
     t.check_constraint "status::text <> 'sent'::text OR notification_id IS NOT NULL", name: "rs_broadcast_recipients_sent"
     t.check_constraint "status::text <> 'skipped'::text OR skip_reason IS NOT NULL", name: "rs_broadcast_recipients_skipped"
-    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'sending'::character varying, 'sent'::character varying, 'skipped'::character varying, 'failed'::character varying]::text[])", name: "rs_broadcast_recipients_status"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying::text, 'sending'::character varying::text, 'sent'::character varying::text, 'skipped'::character varying::text, 'failed'::character varying::text])", name: "rs_broadcast_recipients_status"
   end
 
   create_table "recording_studio_broadcasts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -107,8 +145,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_033910) do
     t.datetime "scheduled_at"
     t.string "status", default: "draft", null: false
     t.datetime "created_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.datetime "sent_at"
     t.check_constraint "status::text <> 'scheduled'::text OR scheduled_at IS NOT NULL", name: "rs_broadcasts_scheduled_at"
-    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'scheduled'::character varying, 'sending'::character varying, 'completed'::character varying, 'cancelled'::character varying]::text[])", name: "rs_broadcasts_status"
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying::text, 'scheduled'::character varying::text, 'sending'::character varying::text, 'completed'::character varying::text, 'cancelled'::character varying::text])", name: "rs_broadcasts_status"
   end
 
   create_table "recording_studio_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -200,6 +239,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_033910) do
     t.check_constraint "channel IS NOT NULL AND enabled IS NOT NULL AND cadence IS NULL OR channel IS NULL AND enabled IS NULL AND cadence IS NOT NULL", name: "chk_rsn_preferences_shape"
   end
 
+  create_table "recording_studio_publishable_publishables", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "slug", null: false
+    t.string "status", default: "draft", null: false
+    t.datetime "publish_at"
+    t.datetime "unpublish_at"
+    t.string "time_zone"
+    t.string "seo_title"
+    t.text "seo_description"
+    t.string "canonical_url"
+    t.string "meta_robots"
+    t.string "social_title"
+    t.text "social_description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "social_image_attachment_recording_id"
+    t.index ["canonical_url"], name: "index_rs_publishables_on_canonical_url"
+    t.index ["slug"], name: "index_rs_publishables_on_slug"
+    t.index ["social_image_attachment_recording_id"], name: "index_rs_publishables_on_social_image_attachment_recording_id"
+    t.index ["status", "publish_at", "unpublish_at"], name: "index_rs_publishables_on_state_window"
+  end
+
   create_table "recording_studio_recordings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.uuid "parent_recording_id"
@@ -209,6 +269,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_033910) do
     t.datetime "trashed_at"
     t.datetime "updated_at", null: false
     t.index ["parent_recording_id"], name: "index_recording_studio_recordings_on_parent_recording_id"
+    t.index ["parent_recording_id"], name: "index_rs_publishable_child_per_parent", unique: true, where: "(((recordable_type)::text = 'RecordingStudioPublishable::Publishable'::text) AND (trashed_at IS NULL))"
     t.index ["recordable_type", "recordable_id", "parent_recording_id", "trashed_at"], name: "index_recording_studio_recordings_on_recordable_parent_trashed"
     t.index ["recordable_type", "recordable_id"], name: "index_recording_studio_recordings_on_recordable"
     t.index ["recordable_type", "recordable_id"], name: "index_rs_unique_root_recording_per_recordable", unique: true, where: "(parent_recording_id IS NULL)"
@@ -257,6 +318,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_033910) do
   add_foreign_key "recording_studio_access_invitations", "recording_studio_recordings", column: "recording_id"
   add_foreign_key "recording_studio_events", "recording_studio_recordings", column: "recording_id"
   add_foreign_key "recording_studio_notifications_deliveries", "recording_studio_notifications_notifications", column: "notification_id"
+  add_foreign_key "recording_studio_publishable_publishables", "recording_studio_recordings", column: "social_image_attachment_recording_id", name: "fk_rs_publishables_social_image_attachment_recording"
   add_foreign_key "recording_studio_recordings", "recording_studio_recordings", column: "parent_recording_id"
   add_foreign_key "recording_studio_recordings", "recording_studio_recordings", column: "root_recording_id"
 end

@@ -1,0 +1,13 @@
+<%= render FlatPack::List::Component.new(
+      layout: :key_value,
+      key_width: "8rem",
+      stack_below: :sm,
+      spacing: :dense,
+      divider: true
+    ) do %>
+  <% rows.each do |row| %>
+    <%= render FlatPack::List::Item.new(key: row[:label]) do %>
+      <%= row[:value] %>
+    <% end %>
+  <% end %>
+<% end %>

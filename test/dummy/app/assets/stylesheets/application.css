@@ -1,0 +1,6 @@
+/*
+ * Notifications, Accessible, and other engine layouts link "application".
+ * Flatpack stylesheets and the Tailwind build are linked next to it.
+ * This file is the host stylesheet those links resolve. Keep host-wide
+ * overrides here so a missing application.css does not 500 the page.
+ */

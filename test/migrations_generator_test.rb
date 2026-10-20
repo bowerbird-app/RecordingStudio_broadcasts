@@ -13,7 +13,11 @@ class MigrationsGeneratorTest < Minitest::Test
       versions = copied.map { |name| name[/\A\d+/] }
       names = copied.map { |name| name.sub(/\A\d+_/, "") }
 
-      assert_equal %w[create_recording_studio_broadcasts.rb create_recording_studio_broadcast_recipients.rb], names
+      assert_equal %w[
+        add_sent_at_to_recording_studio_broadcasts.rb
+        create_recording_studio_broadcast_recipients.rb
+        create_recording_studio_broadcasts.rb
+      ], names.sort
       assert_equal versions.uniq, versions
     end
   end

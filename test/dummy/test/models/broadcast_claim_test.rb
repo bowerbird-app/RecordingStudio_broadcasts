@@ -8,9 +8,11 @@ class BroadcastClaimTest < ActiveSupport::TestCase
   setup do
     reset_tables!
     RecordingStudioBroadcasts.configuration.batch_size = 2
-    3.times { |index| create_user("claim#{index}@example.com") }
+    sender = create_user("sender@example.com")
+    grant_sender!(sender)
+    2.times { |index| create_user("claim#{index}@example.com") }
     @recording = create_broadcast
-    RecordingStudioBroadcasts.launch(@recording, actor: nil)
+    RecordingStudioBroadcasts.launch(@recording, actor: sender)
   end
 
   teardown do
