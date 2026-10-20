@@ -30,5 +30,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "recording_studio_attachable", ">= 0.15", "< 0.21"
   spec.add_dependency "recording_studio_notifications", ">= 0.11.0", "< 0.12"
   spec.add_dependency "recording_studio_notifications_email", ">= 0.3.15", "< 0.4"
-  spec.add_dependency "recording_studio_publishable", ">= 0.9.0", "< 0.10"
+  spec.add_dependency "recording_studio_publishable", ">= 0.9.2", "< 0.10"
 end
