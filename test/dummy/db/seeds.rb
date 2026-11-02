@@ -95,10 +95,11 @@ Current.actor = user
 begin
   seed_broadcast.call("Draft notes", "Still writing", "This one stays a draft.")
 
-  scheduled = seed_broadcast.call("October 24 send", "Scheduled product update", "This goes out on October 24.")
+  scheduled_at = 2.days.from_now.change(min: 0, sec: 0, usec: 0)
+  scheduled = seed_broadcast.call("Later send", "Scheduled product update", "This goes out later.")
   if scheduled.recordable.status == "draft"
     RecordingStudioBroadcasts.schedule(
-      scheduled, at: Time.zone.parse("2026-10-24 15:00"), actor: user
+      scheduled, at: scheduled_at, actor: user
     )
   end
 
@@ -116,4 +117,4 @@ ensure
   Current.actor = previous_actor
 end
 
-puts "Seeded: draft, scheduled (October 24, 2026 15:00), and sent broadcasts"
+puts "Seeded: draft, scheduled (#{I18n.l(scheduled_at.in_time_zone, format: :long)}), and sent broadcasts"
