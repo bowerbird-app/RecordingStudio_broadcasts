@@ -87,6 +87,20 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Send now"
   end
 
+  test "an admin test send with a missing from does not 500" do
+    recording = create_broadcast(actor: @admin)
+    sign_in @admin
+
+    RecordingStudioNotificationsEmail.configuration.stub(:from, nil) do
+      post "/admin/broadcasts/#{recording.id}/test_send"
+    end
+
+    assert_redirected_to "/admin/broadcasts/#{recording.id}"
+    follow_redirect!
+    assert_response :success
+    assert_equal "draft", broadcast_status(recording)
+  end
+
   test "a viewer can open broadcasts but cannot send one" do
     recording = create_broadcast(actor: @admin)
     sign_in @viewer

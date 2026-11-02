@@ -40,6 +40,7 @@ module RecordingStudioBroadcasts
       !undeliverable?(addresses)
     end
 
+    # Missing/invalid lookup is no address so preview and snapshot match (send never sees them).
     def addresses_for(recipient)
       Array(RecordingStudioNotificationsEmail.config.recipients.resolve(recipient))
     rescue ArgumentError

@@ -2,6 +2,8 @@
 
 module RecordingStudioBroadcasts
   module Delivery
+    SUPPRESSED_MESSAGE = "email recipient is suppressed"
+
     module_function
 
     def claim(recording)
@@ -15,7 +17,7 @@ module RecordingStudioBroadcasts
       row.update!(attempt(row))
     rescue RecordingStudioNotificationsEmail::SuppressedRecipientError
       row.update!(status: "skipped", skip_reason: "suppressed")
-    rescue RecordingStudioNotificationsEmail::DeliveryError => e
+    rescue StandardError => e
       Rails.error.report(e, handled: true, context: { broadcast_recipient_id: row.id })
       row.update!(status: "failed")
     end
@@ -44,30 +46,11 @@ module RecordingStudioBroadcasts
 
     def notify(recording, recipient, idempotency_key)
       broadcast = recording.recordable
-      capturing_delivery_error do
-        RecordingStudioNotifications.notify(
-          notification_type: NOTIFICATION_TYPE, recipient:, idempotency_key:,
-          title: broadcast.subject, body: broadcast.body,
-          channels: [:email], inbox: false, deliver_later: false
-        )
-      end
-    end
-
-    # Notifications' delivery job records adapter errors on the delivery row and
-    # swallows them unless raise_on_delivery_error is set. Re-raise so this gem
-    # can skip suppressions and fail only known send errors.
-    def capturing_delivery_error(&)
-      error = nil
-      notification = ActiveSupport::Notifications.subscribed(
-        lambda do |_name, _started, _finished, _id, payload|
-          error ||= payload[:exception_object]
-        end,
-        "deliver.recording_studio_notifications",
-        &
+      RecordingStudioNotifications.notify(
+        notification_type: NOTIFICATION_TYPE, recipient:, idempotency_key:,
+        title: broadcast.subject, body: broadcast.body,
+        channels: [:email], inbox: false, deliver_later: false
       )
-      raise error if error
-
-      notification
     end
 
     def outcome(notification)
@@ -75,10 +58,11 @@ module RecordingStudioBroadcasts
 
       delivery = notification.deliveries.find_by(channel: "email")
       return { status: "sent" } if delivery&.delivered?
+      return { status: "skipped", skip_reason: "suppressed" } if delivery&.error_message == SUPPRESSED_MESSAGE
 
       { status: "failed" }
     end
 
-    private_class_method :claim_batch, :attempt, :notify, :capturing_delivery_error, :outcome
+    private_class_method :claim_batch, :attempt, :notify, :outcome
   end
 end
