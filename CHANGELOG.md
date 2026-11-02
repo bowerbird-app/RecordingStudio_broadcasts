@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0]
+
+### Changed
+
+- Send no longer pre-checks notification preferences. `RecordingStudioNotifications.notify` already drops optional email when the preference is off and returns `nil`. Broadcasts treats that as a preference skip. Audience preview still checks the preference so Ready / Left out counts stay honest.
+- Audience eligibility resolves addresses through `RecordingStudioNotificationsEmail.config.recipients`, not a second `email` / `name` lookup on Broadcasts.
+- A suppressed send is classified from `SuppressedRecipientError`, not from the email adapter's error message text. Other adapter `DeliveryError`s still mark that recipient failed. Any other error raises so a batch does not hide bugs.
+- Returning a scheduled broadcast to draft after an outside Publishable edit retries only `InvalidTransition`, `RecordInvalid`, and `RecordNotSaved`. Other errors raise.
+
+### Upgrade notes
+
+- Stop passing `email:` and `name:` to `RecordingStudioBroadcasts.config.recipients`. Pass `relation:` only. If an address is not `#email`, register the same lookup once on the email channel: `RecordingStudioNotificationsEmail.config.recipients.register("User", ->(user) { user.contact_email })`.
+- Hosts that rescued a blanket send failure per recipient will now see unknown errors raise out of `DeliverBroadcastJob`. Preference skips and suppressions still record as skipped rows.
+
 ## [0.2.0]
 
 ### Added

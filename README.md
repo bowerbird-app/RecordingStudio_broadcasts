@@ -61,9 +61,7 @@ RecordingStudioBroadcasts.configure do |config|
   config.batch_size = 100
   config.admin_root_type = "AdminRoot"
   config.recipients(
-    relation: -> { User.all },
-    email: :email,
-    name: ->(user) { user.email }
+    relation: -> { User.all }
   )
 end
 
@@ -72,13 +70,13 @@ RecordingStudioBroadcasts.register_filter(:registered_after, label: "Joined afte
 end
 ```
 
-`relation` returns the people a broadcast can reach. `email` and `name` take a method name or a proc. Each filter gets the current scope and the admin's value and returns a narrower scope. Filters combine with AND. A blank value skips its filter. Registering the same key again replaces it, so reloading code is safe. A saved broadcast whose filter key is no longer registered matches nobody. It never widens to everyone.
-
-Broadcasts counts people by `email`, but the email channel looks the address up on its own. It uses `recipient.email` by default. If your address lives elsewhere, register the same lookup with the email channel so both agree:
+`relation` returns the people a broadcast can reach. Addresses come from the email channel. It uses `recipient.email` by default. If an address lives elsewhere, register that lookup once on the email channel so preview and send agree:
 
 ```ruby
 RecordingStudioNotificationsEmail.config.recipients.register("User", ->(user) { user.contact_email })
 ```
+
+Each filter gets the current scope and the admin's value and returns a narrower scope. Filters combine with AND. A blank value skips its filter. Registering the same key again replaces it, so reloading code is safe. A saved broadcast whose filter key is no longer registered matches nobody. It never widens to everyone.
 
 ## Send
 

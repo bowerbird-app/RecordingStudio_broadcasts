@@ -31,17 +31,23 @@ module RecordingStudioBroadcasts
     end
 
     def eligible?(recipient)
-      email = recipients.email_for(recipient)
-      return false if email.blank?
+      addresses = addresses_for(recipient)
+      return false if addresses.blank?
       return false unless RecordingStudioNotifications::Preference.enabled_for?(
         recipient:, notification_type: NOTIFICATION_TYPE, channel: :email, default: true
       )
 
-      !undeliverable?(email)
+      !undeliverable?(addresses)
     end
 
-    def undeliverable?(email)
-      RecordingStudioNotificationsEmail::Suppression.suppressed?(email)
+    def addresses_for(recipient)
+      Array(RecordingStudioNotificationsEmail.config.recipients.resolve(recipient))
+    rescue ArgumentError
+      []
+    end
+
+    def undeliverable?(addresses)
+      Array(addresses).any? { |address| RecordingStudioNotificationsEmail::Suppression.suppressed?(address) }
     rescue ArgumentError
       true
     end
@@ -63,6 +69,6 @@ module RecordingStudioBroadcasts
       RecordingStudioBroadcasts.configuration.recipients
     end
 
-    private_class_method :undeliverable?, :row_for, :recipients
+    private_class_method :addresses_for, :undeliverable?, :row_for, :recipients
   end
 end

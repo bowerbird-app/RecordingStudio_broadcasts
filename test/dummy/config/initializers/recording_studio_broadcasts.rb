@@ -5,9 +5,7 @@ RecordingStudioBroadcasts.configure do |config|
   config.admin_root_type = "AdminRoot"
 
   config.recipients(
-    relation: -> { User.all },
-    email: :email,
-    name: ->(user) { user.email }
+    relation: -> { User.all }
   )
 end
 

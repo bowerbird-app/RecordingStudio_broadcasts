@@ -2,8 +2,6 @@
 
 module RecordingStudioBroadcasts
   module Delivery
-    SUPPRESSED_MESSAGE = "email recipient is suppressed"
-
     module_function
 
     def claim(recording)
@@ -17,7 +15,7 @@ module RecordingStudioBroadcasts
       row.update!(attempt(row))
     rescue RecordingStudioNotificationsEmail::SuppressedRecipientError
       row.update!(status: "skipped", skip_reason: "suppressed")
-    rescue StandardError => e
+    rescue RecordingStudioNotificationsEmail::DeliveryError => e
       Rails.error.report(e, handled: true, context: { broadcast_recipient_id: row.id })
       row.update!(status: "failed")
     end
@@ -39,8 +37,6 @@ module RecordingStudioBroadcasts
     end
 
     def attempt(row)
-      return { status: "skipped", skip_reason: "preference" } unless preference_enabled?(row.recipient)
-
       key = "broadcast/#{row.recording_id}/#{row.recipient_type}/#{row.recipient_id}"
       notification = notify(row.recording, row.recipient, key)
       { notification_id: notification&.id, **outcome(notification) }
@@ -48,11 +44,30 @@ module RecordingStudioBroadcasts
 
     def notify(recording, recipient, idempotency_key)
       broadcast = recording.recordable
-      RecordingStudioNotifications.notify(
-        notification_type: NOTIFICATION_TYPE, recipient:, idempotency_key:,
-        title: broadcast.subject, body: broadcast.body,
-        channels: [:email], inbox: false, deliver_later: false
+      capturing_delivery_error do
+        RecordingStudioNotifications.notify(
+          notification_type: NOTIFICATION_TYPE, recipient:, idempotency_key:,
+          title: broadcast.subject, body: broadcast.body,
+          channels: [:email], inbox: false, deliver_later: false
+        )
+      end
+    end
+
+    # Notifications' delivery job records adapter errors on the delivery row and
+    # swallows them unless raise_on_delivery_error is set. Re-raise so this gem
+    # can skip suppressions and fail only known send errors.
+    def capturing_delivery_error(&)
+      error = nil
+      notification = ActiveSupport::Notifications.subscribed(
+        lambda do |_name, _started, _finished, _id, payload|
+          error ||= payload[:exception_object]
+        end,
+        "deliver.recording_studio_notifications",
+        &
       )
+      raise error if error
+
+      notification
     end
 
     def outcome(notification)
@@ -60,17 +75,10 @@ module RecordingStudioBroadcasts
 
       delivery = notification.deliveries.find_by(channel: "email")
       return { status: "sent" } if delivery&.delivered?
-      return { status: "skipped", skip_reason: "suppressed" } if delivery&.error_message == SUPPRESSED_MESSAGE
 
       { status: "failed" }
     end
 
-    def preference_enabled?(recipient)
-      RecordingStudioNotifications::Preference.enabled_for?(
-        recipient:, notification_type: NOTIFICATION_TYPE, channel: :email, default: true
-      )
-    end
-
-    private_class_method :claim_batch, :attempt, :notify, :outcome, :preference_enabled?
+    private_class_method :claim_batch, :attempt, :notify, :capturing_delivery_error, :outcome
   end
 end
