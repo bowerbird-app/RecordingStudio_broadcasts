@@ -8,12 +8,27 @@
 - Audience eligibility resolves addresses through `RecordingStudioNotificationsEmail.config.recipients`, not a second `email` / `name` lookup on Broadcasts.
 - A suppressed send is classified from `SuppressedRecipientError`, not from the email adapter's error message text. Other adapter `DeliveryError`s still mark that recipient failed. Any other error raises so a batch does not hide bugs.
 - Returning a scheduled broadcast to draft after an outside Publishable edit retries only `InvalidTransition`, `RecordInvalid`, and `RecordNotSaved`. Other errors raise.
-- GitHub Actions `setup-ruby` steps that read `.ruby-version` now request `3.3`, so ubuntu-latest can install a 3.3 patch that exists on 26.04. Matrix jobs are unchanged.
 
 ### Upgrade notes
 
 - Stop passing `email:` and `name:` to `RecordingStudioBroadcasts.config.recipients`. Pass `relation:` only. If an address is not `#email`, register the same lookup once on the email channel: `RecordingStudioNotificationsEmail.config.recipients.register("User", ->(user) { user.contact_email })`.
 - Hosts that rescued a blanket send failure per recipient will now see unknown errors raise out of `DeliverBroadcastJob`. Preference skips and suppressions still record as skipped rows.
+
+## [0.2.2]
+
+### Changed
+
+- Cursor Cloud environment name is `recording-studio-broadcasts`.
+- Dummy PostgreSQL databases default to `broadcasts_development`, `broadcasts_test`, and `broadcasts_production`.
+- README install pin for this gem matches shipped tag `v0.2.1`.
+- GitHub Actions `setup-ruby` steps that read `.ruby-version` now request `3.3`, so ubuntu-latest can install a 3.3 patch that exists on 26.04. Matrix jobs are unchanged.
+- Dummy schedule tests and seeds use a time relative to the clock, so a hard-coded send day cannot go stale.
+
+## [0.2.1]
+
+### Added
+
+- Once a broadcast has been sent, Publishable writes that would change the send clock are refused. Edit redirects to the broadcasts list. Edit and Delete stay hidden on the admin resource. Cancel and completing a send still run.
 
 ## [0.2.0]
 
