@@ -8,6 +8,7 @@
 - Audience eligibility resolves addresses through `RecordingStudioNotificationsEmail.config.recipients`, not a second `email` / `name` lookup on Broadcasts.
 - A suppressed send is classified from `SuppressedRecipientError`, not from the email adapter's error message text. Other adapter `DeliveryError`s still mark that recipient failed. Any other error raises so a batch does not hide bugs.
 - Returning a scheduled broadcast to draft after an outside Publishable edit retries only `InvalidTransition`, `RecordInvalid`, and `RecordNotSaved`. Other errors raise.
+- GitHub Actions `setup-ruby` steps that read `.ruby-version` now request `3.3`, so ubuntu-latest can install a 3.3 patch that exists on 26.04. Matrix jobs are unchanged.
 
 ### Upgrade notes
 
