@@ -132,8 +132,8 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
 
   test "the show page names a scheduled send and a sent one" do
     sign_in @admin
-    scheduled = create_broadcast(actor: @admin, title: "October 24 send")
-    at = Time.zone.parse("2026-10-24 15:00")
+    scheduled = create_broadcast(actor: @admin, title: "Later send")
+    at = 2.days.from_now.change(min: 0, sec: 0, usec: 0)
     RecordingStudioBroadcasts.schedule(scheduled, at:, actor: @admin)
 
     get "/admin/broadcasts/#{scheduled.id}"
@@ -141,7 +141,7 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "span[class*='badge-radius']", text: "Scheduled", count: 1
     assert_includes response.body, "Sends at"
-    assert_includes response.body, "October 24, 2026 15:00"
+    assert_includes response.body, I18n.l(at.in_time_zone, format: :long)
     assert_includes response.body, "Unpublish"
     assert_includes response.body, "Send now"
     assert_includes response.body, "Schedule"

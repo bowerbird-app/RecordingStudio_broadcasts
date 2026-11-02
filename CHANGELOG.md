@@ -8,6 +8,7 @@
 - Dummy PostgreSQL databases default to `broadcasts_development`, `broadcasts_test`, and `broadcasts_production`.
 - README install pin for this gem matches shipped tag `v0.2.1`.
 - GitHub Actions `setup-ruby` steps that read `.ruby-version` now request `3.3`, so ubuntu-latest can install a 3.3 patch that exists on 26.04. Matrix jobs are unchanged.
+- Dummy schedule tests and seeds use a time relative to the clock, so a hard-coded send day cannot go stale.
 
 ## [0.2.1]
 

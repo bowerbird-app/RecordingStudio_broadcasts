@@ -21,7 +21,7 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
   teardown { reset_tables! }
 
   test "scheduling stores publishable's publish time and waits for that job" do
-    at = Time.zone.parse("2026-10-24 15:00")
+    at = 2.hours.from_now.change(usec: 0)
 
     assert_enqueued_with(job: RecordingStudioPublishable::WindowTransitionJob) do
       RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
@@ -127,14 +127,16 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
 
   test "a non-UTC zone keeps a DST overlap instant" do
     zone = ActiveSupport::TimeZone["America/New_York"]
-    at = zone.local(2026, 11, 1, 1, 30, 0)
+    at = next_new_york_dst_overlap(zone)
 
-    Time.use_zone(zone) do
-      RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+    travel_to(at - 12.hours) do
+      Time.use_zone(zone) do
+        RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+      end
+
+      assert_equal at.to_i, @recording.reload.current_publishable.publish_at.to_i
+      assert_equal "scheduled", broadcast_status(@recording)
     end
-
-    assert_equal at.to_i, @recording.reload.current_publishable.publish_at.to_i
-    assert_equal "scheduled", broadcast_status(@recording)
   end
 
   test "publishing a draft through Publishable does not send" do
@@ -418,6 +420,18 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
   end
 
   private
+
+  def next_new_york_dst_overlap(zone)
+    year = Time.current.year
+    loop do
+      sunday = Date.new(year, 11, 1)
+      sunday += (7 - sunday.wday) % 7
+      at = zone.local(sunday.year, sunday.month, sunday.day, 1, 30, 0)
+      return at if at > Time.current
+
+      year += 1
+    end
+  end
 
   # The window job enqueues delivery when it runs, so one flush is not enough.
   def drain_due_jobs
