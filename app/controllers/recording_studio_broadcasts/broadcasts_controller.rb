@@ -77,7 +77,13 @@ module RecordingStudioBroadcasts
 
     def test_send
       notification = perform(:test_send) { RecordingStudioBroadcasts.test_send(@recording, actor: current_actor) }
-      redirect_to broadcast_path(@recording), **test_send_flash(notification)
+      if notification.nil?
+        redirect_to broadcast_path(@recording), alert: "No test went out because product updates are off for you."
+      elsif notification.previously_new_record?
+        redirect_to broadcast_path(@recording), notice: "Test sent to you."
+      else
+        redirect_to broadcast_path(@recording), notice: "You already got a test of this broadcast."
+      end
     end
 
     private
@@ -119,14 +125,6 @@ module RecordingStudioBroadcasts
 
     def refuse(error)
       redirect_to broadcast_path(@recording), alert: error.message
-    end
-
-    def test_send_flash(notification)
-      return { alert: "No test went out because product updates are off for you." } if notification.nil?
-      return { alert: "The test didn't go out. Check the From address." } if Delivery.email_failed?(notification)
-      return { notice: "Test sent to you." } if notification.previously_new_record?
-
-      { notice: "You already got a test of this broadcast." }
     end
   end
 end

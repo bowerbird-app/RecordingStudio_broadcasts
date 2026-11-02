@@ -98,7 +98,6 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_redirected_to "/admin/broadcasts/#{recording.id}"
     follow_redirect!
     assert_response :success
-    assert_select "[role=alert]", text: /The test didn't go out. Check the From address./
     assert_equal "draft", broadcast_status(recording)
   end
 
