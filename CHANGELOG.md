@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.2]
+
+### Changed
+
+- Cursor Cloud environment name is `recording-studio-broadcasts`.
+- Dummy PostgreSQL databases default to `broadcasts_development`, `broadcasts_test`, and `broadcasts_production`.
+- README install pin for this gem matches shipped tag `v0.2.1`.
+
+## [0.2.1]
+
+### Added
+
+- Once a broadcast has been sent, Publishable writes that would change the send clock are refused. Edit redirects to the broadcasts list. Edit and Delete stay hidden on the admin resource. Cancel and completing a send still run.
+
 ## [0.2.0]
 
 ### Added

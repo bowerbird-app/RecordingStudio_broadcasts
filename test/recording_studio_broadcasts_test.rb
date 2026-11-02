@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioBroadcastsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.2.0", ::RecordingStudioBroadcasts::VERSION
+    assert_equal "0.2.2", ::RecordingStudioBroadcasts::VERSION
   end
 
   def test_engine_exists
@@ -35,11 +35,29 @@ class RecordingStudioBroadcastsTest < Minitest::Test
     path = File.expand_path("../.cursor/environment.json", __dir__)
     json = JSON.parse(File.read(path))
 
-    assert_equal "recording-studio-gem-template", json["name"]
+    assert_equal "recording-studio-broadcasts", json["name"]
     assert_equal ".cursor/install.sh", json["install"]
     assert_equal ".cursor/start.sh", json["start"]
     refute json.key?("snapshot"), "snapshot pins a Personal build and skips install"
     refute json.key?("agentCanUpdateSnapshot")
+  end
+
+  def test_dummy_database_defaults_are_broadcasts_named
+    database_yml = File.read(File.expand_path("dummy/config/database.yml", __dir__))
+
+    assert_includes database_yml, '"broadcasts_development"'
+    assert_includes database_yml, '"broadcasts_test"'
+    assert_includes database_yml, "database: broadcasts_production"
+    refute_includes database_yml, "app_development"
+    refute_includes database_yml, "app_test"
+    refute_includes database_yml, "dummy_production"
+  end
+
+  def test_readme_install_pin_matches_shipped_broadcasts_tag
+    readme = File.read(File.expand_path("../README.md", __dir__))
+
+    assert_includes readme, 'tag: "v0.2.1"'
+    refute_includes readme, 'RecordingStudio_broadcasts", tag: "v0.2.0"'
   end
 
   def test_cursor_install_still_fetches_skills

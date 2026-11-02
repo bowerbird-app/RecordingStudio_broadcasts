@@ -16,7 +16,7 @@ gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_not
 gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.3.15"
 gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.20.0"
 gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v0.9.2"
-gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.2.0"
+gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.2.1"
 ```
 
 Install Admin, Notifications, the email channel, and Publishable first, following their READMEs. Publishable's recordable includes Attachable, so install that gem too. Then:

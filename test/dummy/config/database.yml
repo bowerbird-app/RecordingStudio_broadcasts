@@ -26,14 +26,14 @@ default: &default
 
 development:
   <<: *default
-  database: <%= ENV.fetch("DB_NAME") { "app_development" } %>
+  database: <%= ENV.fetch("DB_NAME") { "broadcasts_development" } %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: <%= ENV.fetch("DB_NAME") { "app_test" } %>
+  database: <%= ENV.fetch("DB_NAME") { "broadcasts_test" } %>
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is
@@ -64,18 +64,18 @@ test:
 production:
   primary: &primary_production
     <<: *default
-    database: dummy_production
+    database: broadcasts_production
     username: dummy
     password: <%= ENV["DUMMY_DATABASE_PASSWORD"] %>
   cache:
     <<: *primary_production
-    database: dummy_production_cache
+    database: broadcasts_production_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
-    database: dummy_production_queue
+    database: broadcasts_production_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *primary_production
-    database: dummy_production_cable
+    database: broadcasts_production_cable
     migrations_paths: db/cable_migrate
