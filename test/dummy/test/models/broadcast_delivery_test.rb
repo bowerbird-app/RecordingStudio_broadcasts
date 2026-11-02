@@ -70,6 +70,18 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
     assert_no_enqueued_jobs
   end
 
+  test "a send error other than suppression or the email adapter raises" do
+    RecordingStudioBroadcasts::Audience.snapshot!(@recording)
+    Campaign.revise!(@recording, actor: nil, status: "sending")
+    row = Recipient.find_by!(recording_id: @recording.id, recipient_id: @bob.id)
+    boom = ->(*_args, **_kwargs) { raise RuntimeError, "not an adapter error" }
+
+    assert_raises(RuntimeError) do
+      RecordingStudioNotifications.stub(:notify, boom) { Delivery.deliver_one(row) }
+    end
+    assert_equal "pending", row.reload.status
+  end
+
   test "an email adapter delivery error marks that row failed and leaves the others" do
     RecordingStudioBroadcasts::Audience.snapshot!(@recording)
     Campaign.revise!(@recording, actor: nil, status: "sending")
