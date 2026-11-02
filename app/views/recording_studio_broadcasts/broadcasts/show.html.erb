@@ -19,7 +19,7 @@
   <% end %>
   <%= render "key_values", rows: details %>
 
-  <%= render FlatPack::PageTitle::Component.new(title: "Who gets it", variant: :h2) %>
+  <%= render FlatPack::SectionTitle::Component.new(title: "Who gets it", size: :md, spacing: :md) %>
   <%= render "key_values", rows: [
         { label: "Matching", value: @preview[:matching].to_s },
         { label: "Ready", value: @preview[:eligible].to_s },
@@ -27,7 +27,7 @@
       ] %>
 
   <% if @delivery.any? %>
-    <%= render FlatPack::PageTitle::Component.new(title: "Delivery", variant: :h2) %>
+    <%= render FlatPack::SectionTitle::Component.new(title: "Delivery", size: :md, spacing: :md) %>
     <% delivery = RecordingStudioBroadcasts::Recipient::STATUS_LABELS.filter_map do |status, label|
          { label: label, value: @delivery[status].to_s } if @delivery.key?(status)
        end %>
@@ -87,7 +87,7 @@
   <% end %>
 
   <% if offered?(:schedule) %>
-    <%= render FlatPack::PageTitle::Component.new(title: "Schedule", variant: :h2) %>
+    <%= render FlatPack::SectionTitle::Component.new(title: "Schedule", size: :md, spacing: :md) %>
     <%= form_with url: schedule_broadcast_path(@recording), method: :post do %>
       <%= render FlatPack::Grid::Component.new(cols: 1, gap: :sm) do %>
         <%= render FlatPack::DateTimeInput::Component.new(

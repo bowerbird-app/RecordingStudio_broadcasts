@@ -11,11 +11,16 @@
 <% end %>
 <% badge = local_assigns[:badge] %>
 <% subtitle = local_assigns[:subtitle] %>
-<% if badge %>
-  <div class="flex flex-wrap items-start gap-2">
-    <%= render FlatPack::PageTitle::Component.new(title: title, subtitle: subtitle) %>
-    <%= render badge %>
-  </div>
-<% else %>
-  <%= render FlatPack::PageTitle::Component.new(title: title, subtitle: subtitle) %>
+<%= render FlatPack::SectionTitle::Component.new(
+      title: title,
+      subtitle: subtitle,
+      size: :lg,
+      spacing: :md,
+      level: :h1
+    ) do |section_title| %>
+  <% if badge %>
+    <% section_title.with_trailing do %>
+      <%= render badge %>
+    <% end %>
+  <% end %>
 <% end %>

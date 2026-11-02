@@ -60,6 +60,22 @@ class RecordingStudioBroadcastsTest < Minitest::Test
     refute_includes readme, 'RecordingStudio_broadcasts", tag: "v0.2.0"'
   end
 
+  def test_show_page_uses_section_title_not_page_title_headings
+    views = File.expand_path("../app/views/recording_studio_broadcasts/broadcasts", __dir__)
+    show = File.read(File.join(views, "show.html.erb"))
+    header = File.read(File.join(views, "_header.html.erb"))
+    screen = File.read(File.expand_path("../app/admin/recording_studio_broadcasts/broadcasts_screen.rb", __dir__))
+
+    assert_includes show, "FlatPack::SectionTitle::Component.new(title: \"Who gets it\", size: :md, spacing: :md)"
+    assert_includes show, "FlatPack::SectionTitle::Component.new(title: \"Delivery\", size: :md, spacing: :md)"
+    assert_includes show, "FlatPack::SectionTitle::Component.new(title: \"Schedule\", size: :md, spacing: :md)"
+    refute_includes show, "variant: :h2"
+    assert_includes header, "FlatPack::SectionTitle::Component.new"
+    assert_includes header, "with_trailing"
+    refute_includes header, "flex flex-wrap items-start gap-2"
+    refute_includes screen, "text-[var(--color-primary)] underline"
+  end
+
   def test_cursor_install_still_fetches_skills
     install_script = File.read(File.expand_path("../.cursor/install.sh", __dir__))
 

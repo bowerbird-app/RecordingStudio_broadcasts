@@ -98,7 +98,11 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     get "/admin/screens/broadcasts/table"
     assert_response :success
     assert_includes response.body, "October update"
-    assert_select "a.underline[href='/admin/broadcasts/#{recording.id}']"
+    assert_select "a.flat-pack-link[href='/admin/broadcasts/#{recording.id}']" do |nodes|
+      classes = nodes.first["class"].to_s
+      refute_includes classes, "underline"
+      refute_includes classes, "text-[var(--color-primary)]"
+    end
 
     get "/admin/broadcasts/#{recording.id}"
     assert_response :success
@@ -222,27 +226,22 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Returned to draft: send time changed in Publishable by cara@example.com"
   end
 
-  test "the show title uses the same page title as the broadcasts index" do
+  test "the show title keeps the status badge on the SectionTitle row" do
     recording = create_broadcast(actor: @admin, title: "Still writing")
     sign_in @admin
 
-    get "/admin/screens/broadcasts"
-    assert_select "h1", text: "Broadcasts" do |nodes|
-      @index_class = nodes.first["class"]
-      @index_style = nodes.first["style"]
-    end
-
     get "/admin/broadcasts/#{recording.id}"
-    assert_select "h1", text: "Still writing" do |nodes|
-      assert_equal @index_class, nodes.first["class"]
-      assert_equal @index_style, nodes.first["style"]
-    end
-    assert_select "h1", text: "Still writing" do |headings|
-      row = headings.first
-      row = row.parent until row.nil? || badge_sits_beside_title?(row)
-      assert row
-      heading = row.element_children.find { |child| child.css("h1").any? }
-      badge = row.element_children.find { |child| child.text.include?("Draft") && child.css("h1").empty? }
+
+    assert_response :success
+    assert_select ".fp-section-title h1", text: "Still writing"
+    assert_select ".fp-section-title h1.text-2xl.font-semibold", count: 1
+    assert_select "h2.fp-section-title, .fp-section-title h2", text: "Who gets it"
+    assert_select ".fp-section-title h2.text-lg.font-semibold", text: "Who gets it"
+    assert_select ".fp-section-title h2", text: "Schedule"
+    assert_select ".fp-section-title h1", text: "Still writing" do |headings|
+      row = headings.first.parent
+      heading = row.element_children.find { |child| child.name == "h1" }
+      badge = row.element_children.find { |child| child.text.include?("Draft") && child.name != "h1" }
       assert heading
       assert badge
       assert_operator row.element_children.index(heading), :<, row.element_children.index(badge)
@@ -257,13 +256,5 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to "/admin/screens/broadcasts"
     assert_not RecordingStudio::Recording.exists?(recording.id)
-  end
-
-  private
-
-  def badge_sits_beside_title?(row)
-    children = row.element_children
-    children.any? { |child| child.css("h1").any? } &&
-      children.any? { |child| child.text.include?("Draft") && child.css("h1").empty? }
   end
 end

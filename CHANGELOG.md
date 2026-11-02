@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Show-page section headings use Flatpack `SectionTitle` (`size: :md`) instead of `PageTitle` `variant: :h2`.
+- The show-page status badge sits in `SectionTitle`'s trailing slot. PageTitle's `slot` (the actions slot at Flatpack 0.1.254) places the badge under the subtitle, not on the title row.
+- Broadcast title links on the admin table use Flatpack Link's default `flat-pack-link` styling. The dummy Sign out button uses `href:` (Flatpack ≥ 0.1.177).
+
 ## [0.2.2]
 
 ### Changed
