@@ -31,7 +31,8 @@ module RecordingStudioBroadcasts
 
         view.render(
           FlatPack::Link::Component.new(
-            href: context.routes.broadcast_path(row)
+            href: context.routes.broadcast_path(row),
+            class: "text-[var(--color-primary)] underline"
           ).with_content(title)
         )
       }

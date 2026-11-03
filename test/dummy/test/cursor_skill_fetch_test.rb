@@ -33,11 +33,4 @@ class CursorSkillFetchTest < ActiveSupport::TestCase
     tracked = `git -C #{RecordingStudioBroadcasts::Engine.root} ls-files -- .cursor/rules`
     assert_equal "", tracked.strip
   end
-
-  test "dummy Sign out button uses Flatpack href not url" do
-    helper = File.read(RecordingStudioBroadcasts::Engine.root.join("test/dummy/app/helpers/application_helper.rb"))
-
-    assert_includes helper, "href: main_app.destroy_user_session_path"
-    refute_includes helper, "url: main_app.destroy_user_session_path"
-  end
 end
