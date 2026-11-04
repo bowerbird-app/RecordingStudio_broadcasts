@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Lockfiles pin rack 3.2.8.
 - Send no longer pre-checks notification preferences. `RecordingStudioNotifications.notify` already drops optional email when the preference is off and returns `nil`. Broadcasts treats that as a preference skip. Audience preview still checks the preference so Ready / Left out counts stay honest.
 - Audience eligibility resolves addresses through `RecordingStudioNotificationsEmail.config.recipients`, not a second `email` / `name` lookup on Broadcasts.
 - Returning a scheduled broadcast to draft after an outside Publishable edit retries only `InvalidTransition`, `RecordInvalid`, and `RecordNotSaved`. Other errors raise.
