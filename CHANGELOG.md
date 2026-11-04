@@ -6,6 +6,7 @@
 
 - Show-page section headings (Who gets it, Delivery, Schedule) use Flatpack `SectionTitle` (`size: :md`) instead of `PageTitle` `variant: :h2`.
 - The dummy Sign out button uses `href:` (Flatpack ≥ 0.1.177).
+- Bump rack to 3.2.8 in Gemfile.lock and test/dummy/Gemfile.lock.
 
 ## [0.2.2]
 
