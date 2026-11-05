@@ -1,7 +1,9 @@
-<% recording_studio_page_nav(
-     title: title,
-     page_nav_anchor_url: page_nav_anchor_url(default: recording_studio_admin_context.admin_screen_path("broadcasts"))
-   ) %>
+<% flat_pack_page_nav(round: true, style: :default) do |nav| %>
+  <% nav.with_close(
+       href: page_nav_anchor_url(default: recording_studio_admin_context.admin_screen_path("broadcasts")),
+       tooltip: "Close"
+     ) %>
+<% end %>
 <%= render "recording_studio_admin/shared/page_nav" unless recording_studio_admin_default_layout? %>
 <% if notice.present? %>
   <%= render FlatPack::Alert::Component.new(description: notice, style: :success) %>
