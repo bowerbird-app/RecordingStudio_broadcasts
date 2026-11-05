@@ -70,6 +70,24 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
     assert_no_enqueued_jobs
   end
 
+  test "an email adapter delivery error marks that row failed and leaves the others" do
+    RecordingStudioBroadcasts::Audience.snapshot!(@recording)
+    Campaign.revise!(@recording, actor: nil, status: "sending")
+    bob = Recipient.find_by!(recording_id: @recording.id, recipient_id: @bob.id)
+    ann = Recipient.find_by!(recording_id: @recording.id, recipient_id: @ann.id)
+
+    RecordingStudioNotificationsEmail.configuration.stub(:from, nil) do
+      Delivery.deliver_one(bob)
+    end
+
+    assert_equal "failed", bob.reload.status
+    assert_equal "pending", ann.reload.status
+    delivery = RecordingStudioNotifications::Notification.find(bob.notification_id)
+                                                         .deliveries.find_by!(channel: "email")
+    refute_predicate delivery, :delivered?
+    assert_match(/from/i, delivery.error_message)
+  end
+
   test "someone who turns product updates off after launch is skipped without a notification" do
     RecordingStudioBroadcasts::Audience.snapshot!(@recording)
     Campaign.revise!(@recording, actor: nil, status: "sending")
@@ -100,6 +118,17 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
     assert_equal [ "ann@example.com" ], ActionMailer::Base.deliveries.last.to
     assert_equal "draft", broadcast_status(@recording)
     assert_equal 0, Recipient.where(recording_id: @recording.id).count
+  end
+
+  test "a test send with a missing from does not raise" do
+    notification = RecordingStudioNotificationsEmail.configuration.stub(:from, nil) do
+      RecordingStudioBroadcasts.test_send(@recording, actor: @ann)
+    end
+
+    assert_predicate notification, :persisted?
+    assert_equal "draft", broadcast_status(@recording)
+    delivery = notification.deliveries.find_by!(channel: "email")
+    refute_predicate delivery, :delivered?
   end
 
   test "the scheduled job launches at the latest schedule and the superseded job does nothing" do

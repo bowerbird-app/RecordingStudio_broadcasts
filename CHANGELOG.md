@@ -1,16 +1,25 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.1]
 
 ### Changed
 
-- Pin FlatPack `v0.1.341`, Admin `v2.9.1`, and Root Switchable `v0.11.5` so Bundler Audit advisory GHSA-8qw7-6phv-7q6p is cleared (`view_component` >= 4.14.0). Hosts must match those pins. Recording Studio moves to `v6.3.0`. Accessible, Attachable, Cache, Logs, Metrics, Notifications, Notifications Email, Publishable, and Trashable move only as far as that set resolves.
-- Dummy login card uses Card `background` defaults. FlatPack 0.1.341 removed Card `style:`.
-- Broadcast and dummy page nav call `flat_pack_page_nav` with `with_close` / `with_back`. Recording Studio 6.3 removed `recording_studio_page_nav`.
-- Dummy host controllers call `recording_studio_layout`. Recording Studio 6.3 removed `UsesDefaultLayout`. Root Switchable layout stays unset so the default layout applies.
 - Show-page section headings (Who gets it, Delivery, Schedule) use Flatpack `SectionTitle` (`size: :md`) instead of `PageTitle` `variant: :h2`.
-- The dummy Sign out button uses `href:` (Flatpack ≥ 0.1.177).
-- Bump rack to 3.2.8 in Gemfile.lock and test/dummy/Gemfile.lock.
+
+## [0.3.0]
+
+### Changed
+
+- Dummy and development pins use FlatPack `v0.1.341`, Admin `v2.9.1`, Root Switchable `v0.11.5`, and Recording Studio `v6.3.0` so `view_component` stays at 4.14 or newer.
+- Lockfiles pin rack 3.2.8.
+- Send no longer pre-checks notification preferences. `RecordingStudioNotifications.notify` already drops optional email when the preference is off and returns `nil`. Broadcasts treats that as a preference skip. Audience preview still checks the preference so Ready / Left out counts stay honest.
+- Audience eligibility resolves addresses through `RecordingStudioNotificationsEmail.config.recipients`, not a second `email` / `name` lookup on Broadcasts.
+- Returning a scheduled broadcast to draft after an outside Publishable edit retries only `InvalidTransition`, `RecordInvalid`, and `RecordNotSaved`. Other errors raise.
+
+### Upgrade notes
+
+- Hosts must pin FlatPack `v0.1.341` or newer, Admin `v2.9.1` or newer, Recording Studio `v6.3.0` or newer, Notifications `v0.14.8`, the email channel `v0.5.2`, Attachable `v0.22.0`, and Publishable `v0.13.0`. Admin also needs Logs `v0.7.3`.
+- Stop passing `email:` and `name:` to `RecordingStudioBroadcasts.config.recipients`. Pass `relation:` only. If an address is not `#email`, register the same lookup once on the email channel: `RecordingStudioNotificationsEmail.config.recipients.register("User", ->(user) { user.contact_email })`.
 
 ## [0.2.2]
 

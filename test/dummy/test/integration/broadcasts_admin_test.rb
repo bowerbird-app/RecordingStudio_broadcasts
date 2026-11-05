@@ -29,6 +29,8 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
 
     get "/admin/broadcasts/new"
     assert_response :success
+    assert_select "title", text: /New broadcast/
+    assert_select "h1", count: 1
     assert_select "textarea[name='broadcast[body]']" do |nodes|
       classes = nodes.first["class"].to_s
       refute_includes classes, "rounded-full"
@@ -85,6 +87,20 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     assert_select "dt", text: "Sent"
     assert_select "dd", text: "3"
     refute_includes response.body, "Send now"
+  end
+
+  test "an admin test send with a missing from does not 500" do
+    recording = create_broadcast(actor: @admin)
+    sign_in @admin
+
+    RecordingStudioNotificationsEmail.configuration.stub(:from, nil) do
+      post "/admin/broadcasts/#{recording.id}/test_send"
+    end
+
+    assert_redirected_to "/admin/broadcasts/#{recording.id}"
+    follow_redirect!
+    assert_response :success
+    assert_equal "draft", broadcast_status(recording)
   end
 
   test "a viewer can open broadcasts but cannot send one" do
@@ -233,6 +249,7 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     end
 
     get "/admin/broadcasts/#{recording.id}"
+    assert_select "h1", count: 1
     assert_select "h1", text: "Still writing" do |nodes|
       assert_equal @index_class, nodes.first["class"]
       assert_equal @index_style, nodes.first["style"]

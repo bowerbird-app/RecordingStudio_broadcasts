@@ -39,8 +39,6 @@ module RecordingStudioBroadcasts
     end
 
     def attempt(row)
-      return { status: "skipped", skip_reason: "preference" } unless preference_enabled?(row.recipient)
-
       key = "broadcast/#{row.recording_id}/#{row.recipient_type}/#{row.recipient_id}"
       notification = notify(row.recording, row.recipient, key)
       { notification_id: notification&.id, **outcome(notification) }
@@ -65,12 +63,6 @@ module RecordingStudioBroadcasts
       { status: "failed" }
     end
 
-    def preference_enabled?(recipient)
-      RecordingStudioNotifications::Preference.enabled_for?(
-        recipient:, notification_type: NOTIFICATION_TYPE, channel: :email, default: true
-      )
-    end
-
-    private_class_method :claim_batch, :attempt, :notify, :outcome, :preference_enabled?
+    private_class_method :claim_batch, :attempt, :notify, :outcome
   end
 end

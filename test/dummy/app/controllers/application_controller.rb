@@ -7,7 +7,9 @@ class ApplicationController < ActionController::Base
   # Changes to the importmap will invalidate the etag for HTML responses
   stale_when_importmap_changes
 
-  recording_studio_layout { "application" if devise_controller? }
+  recording_studio_layout do
+    devise_controller? ? "application" : "recording_studio/default_layout"
+  end
 
   before_action :authenticate_user!
   before_action :set_current_actor

@@ -152,19 +152,17 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
 
   test "a failure while revising the broadcast rolls the schedule back" do
     at = 2.hours.from_now.change(usec: 0)
-    campaign = RecordingStudioBroadcasts::Campaign
-    campaign.singleton_class.alias_method(:revise_before_failure_test!, :revise!)
-    campaign.define_singleton_method(:revise!) { |*, **| raise ActiveRecord::RecordNotSaved, "stopped" }
+    boom = ->(*_args, **_kwargs) { raise ActiveRecord::RecordNotSaved, "stopped" }
 
     assert_raises(ActiveRecord::RecordNotSaved) do
-      RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+      RecordingStudioBroadcasts::Campaign.stub(:revise!, boom) do
+        RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+      end
     end
 
     assert_equal "draft", broadcast_status(@recording)
     assert_nil @recording.reload.current_publishable
     assert_no_emails { perform_enqueued_jobs }
-  ensure
-    campaign.singleton_class.alias_method(:revise!, :revise_before_failure_test!)
   end
 
   test "moving publish_at earlier in Publishable returns the broadcast to draft" do
@@ -243,9 +241,7 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
   test "a failed return to draft is logged and retried in a later transaction" do
     at = 2.hours.from_now.change(usec: 0)
     RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
-    campaign = RecordingStudioBroadcasts::Campaign
-    campaign.singleton_class.alias_method(:return_to_draft_before_failure!, :return_to_draft!)
-    campaign.define_singleton_method(:return_to_draft!) { |*, **| raise ActiveRecord::RecordNotSaved, "stopped" }
+    boom = ->(*_args, **_kwargs) { raise ActiveRecord::RecordNotSaved, "stopped" }
     log = StringIO.new
     previous_logger = Rails.logger
     Rails.logger = ActiveSupport::Logger.new(log)
@@ -255,13 +251,14 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
         job: RecordingStudioBroadcasts::ReconcilePublishableChangeJob,
         args: [@recording.id, editor.class.name, editor.id]
       ) do
-        edit_publishable!(status: "scheduled", publish_at: 4.hours.from_now.utc.iso8601)
+        RecordingStudioBroadcasts::Campaign.stub(:revise!, boom) do
+          edit_publishable!(status: "scheduled", publish_at: 4.hours.from_now.utc.iso8601)
+        end
       end
 
       assert_equal "scheduled", broadcast_status(@recording)
       assert_includes log.string, "could not return recording #{@recording.id} to draft"
     ensure
-      campaign.singleton_class.alias_method(:return_to_draft!, :return_to_draft_before_failure!)
       Rails.logger = previous_logger if previous_logger
     end
 
@@ -269,6 +266,19 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     assert_equal "draft", broadcast_status(@recording)
     assert_equal "Returned to draft: send time changed in Publishable by #{editor.email}",
                  RecordingStudioBroadcasts::BroadcastsHelper.publishable_return_notice(@recording)
+  end
+
+  test "an unknown error returning to draft is not queued for retry" do
+    at = 2.hours.from_now.change(usec: 0)
+    RecordingStudioBroadcasts.schedule(@recording, at:, actor: @ann)
+    boom = ->(*_args, **_kwargs) { raise RuntimeError, "not a revise failure" }
+
+    RecordingStudioBroadcasts::Campaign.stub(:revise!, boom) do
+      edit_publishable!(status: "scheduled", publish_at: 4.hours.from_now.utc.iso8601)
+    end
+
+    assert_equal "scheduled", broadcast_status(@recording)
+    assert_no_enqueued_jobs(only: RecordingStudioBroadcasts::ReconcilePublishableChangeJob)
   end
 
   test "the reconcile job leaves a sending broadcast alone" do

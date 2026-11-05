@@ -5,7 +5,10 @@ RecordingStudioRootSwitchable.configure do |config|
     Current.actor || controller.current_user
   end
 
-  # nil follows RecordingStudio.configuration.layout, then recording_studio/default_layout.
+  # Render the mounted switcher pages inside the app shell when users visit them.
+  config.layout = lambda do |controller:|
+    controller.devise_controller? ? "application" : "recording_studio/default_layout"
+  end
 
   config.after_switch_redirect = lambda do |controller:, return_to:, **|
     candidate_path = return_to.presence

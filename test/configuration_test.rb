@@ -14,15 +14,12 @@ class ConfigurationTest < Minitest::Test
     assert_equal "AdminRoot", @configuration.admin_root_type
   end
 
-  def test_recipients_reads_email_from_a_symbol_or_a_proc
-    person = Person.new("a@example.com", "b@example.com")
+  def test_recipients_stores_the_host_relation
+    people = [Person.new("a@example.com", "b@example.com")]
 
-    @configuration.recipients(relation: -> { [person] })
-    assert_equal "a@example.com", @configuration.recipients.email_for(person)
+    @configuration.recipients(relation: -> { people })
 
-    @configuration.recipients(relation: -> { [person] }, email: lambda(&:work_email), name: lambda(&:email))
-    assert_equal "b@example.com", @configuration.recipients.email_for(person)
-    assert_equal [person], @configuration.recipients.relation.call
+    assert_equal people, @configuration.recipients.relation.call
   end
 
   def test_recipients_must_be_configured_before_use
