@@ -30,6 +30,7 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     get "/admin/broadcasts/new"
     assert_response :success
     assert_select "title", text: /New broadcast/
+    assert_select "h1", count: 1
     assert_select "textarea[name='broadcast[body]']" do |nodes|
       classes = nodes.first["class"].to_s
       refute_includes classes, "rounded-full"
@@ -248,23 +249,14 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     end
 
     get "/admin/broadcasts/#{recording.id}"
+    assert_select "h1", count: 1
     assert_select "h1", text: "Still writing" do |nodes|
       assert_equal @index_class, nodes.first["class"]
       assert_equal @index_style, nodes.first["style"]
     end
     assert_select "h1", text: "Still writing" do |headings|
-      row = nil
-      headings.each do |heading|
-        cursor = heading
-        while cursor && cursor.name != "document"
-          if badge_sits_beside_title?(cursor)
-            row = cursor
-            break
-          end
-          cursor = cursor.parent
-        end
-        break if row
-      end
+      row = headings.first
+      row = row.parent until row.nil? || badge_sits_beside_title?(row)
       assert row
       heading = row.element_children.find { |child| child.css("h1").any? }
       badge = row.element_children.find { |child| child.text.include?("Draft") && child.css("h1").empty? }

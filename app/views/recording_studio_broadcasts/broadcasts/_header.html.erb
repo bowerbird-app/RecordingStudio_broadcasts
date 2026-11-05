@@ -1,4 +1,7 @@
+<% badge = local_assigns[:badge] %>
+<% subtitle = local_assigns[:subtitle] %>
 <% content_for(:title, title) if title.present? %>
+<% content_for(:subtitle, subtitle) if subtitle.present? %>
 <% flat_pack_page_nav(
      round: true,
      style: :default,
@@ -13,9 +16,9 @@
 <% if alert.present? %>
   <%= render FlatPack::Alert::Component.new(description: alert, style: :danger) %>
 <% end %>
-<% badge = local_assigns[:badge] %>
-<% subtitle = local_assigns[:subtitle] %>
-<% if badge %>
+<% if recording_studio_admin_default_layout? %>
+  <%= render badge if badge %>
+<% elsif badge %>
   <div class="flex flex-wrap items-start gap-2">
     <%= render FlatPack::PageTitle::Component.new(title: title, subtitle: subtitle) %>
     <%= render badge %>
