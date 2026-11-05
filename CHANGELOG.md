@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1]
+
+### Changed
+
+- Show-page section headings (Who gets it, Delivery, Schedule) use Flatpack `SectionTitle` (`size: :md`) instead of `PageTitle` `variant: :h2`.
+
 ## [0.3.0]
 
 ### Changed

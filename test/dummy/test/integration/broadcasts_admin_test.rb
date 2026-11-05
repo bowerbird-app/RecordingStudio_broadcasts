@@ -266,6 +266,21 @@ class BroadcastsAdminTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "the show page renders Who gets it, Delivery, and Schedule as section titles" do
+    recording = create_broadcast(actor: @admin, title: "Still writing")
+    sign_in @admin
+
+    get "/admin/broadcasts/#{recording.id}"
+    assert_response :success
+    assert_select ".fp-section-title h2.text-lg.font-semibold", text: "Who gets it"
+    assert_select ".fp-section-title h2.text-lg.font-semibold", text: "Schedule"
+
+    perform_enqueued_jobs { RecordingStudioBroadcasts.publish_now(recording, actor: @admin) }
+    get "/admin/broadcasts/#{recording.id}"
+    assert_response :success
+    assert_select ".fp-section-title h2.text-lg.font-semibold", text: "Delivery"
+  end
+
   test "an admin deletes a draft" do
     recording = create_broadcast(actor: @admin)
     sign_in @admin
