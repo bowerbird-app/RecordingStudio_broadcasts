@@ -1,6 +1,13 @@
-<% recording_studio_page_nav(
-     title: title,
-     page_nav_anchor_url: page_nav_anchor_url(default: recording_studio_admin_context.admin_screen_path("broadcasts"))
+<% badge = local_assigns[:badge] %>
+<% subtitle = local_assigns[:subtitle] %>
+<% content_for(:title, title) if title.present? %>
+<% content_for(:subtitle, subtitle) if subtitle.present? %>
+<% flat_pack_page_nav(
+     round: true,
+     style: :default,
+     anchor_href: page_nav_anchor_url(default: recording_studio_admin_context.admin_screen_path("broadcasts")),
+     anchor_tooltip: t("recording_studio.admin.navigation.close", default: "Close"),
+     back_tooltip: t("recording_studio.admin.navigation.go_back", default: "Go back")
    ) %>
 <%= render "recording_studio_admin/shared/page_nav" unless recording_studio_admin_default_layout? %>
 <% if notice.present? %>
@@ -9,9 +16,9 @@
 <% if alert.present? %>
   <%= render FlatPack::Alert::Component.new(description: alert, style: :danger) %>
 <% end %>
-<% badge = local_assigns[:badge] %>
-<% subtitle = local_assigns[:subtitle] %>
-<% if badge %>
+<% if recording_studio_admin_default_layout? %>
+  <%= render badge if badge %>
+<% elsif badge %>
   <div class="flex flex-wrap items-start gap-2">
     <%= render FlatPack::PageTitle::Component.new(title: title, subtitle: subtitle) %>
     <%= render badge %>

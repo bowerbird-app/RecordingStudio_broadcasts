@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioBroadcastsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.2.2", ::RecordingStudioBroadcasts::VERSION
+    assert_equal "0.3.0", ::RecordingStudioBroadcasts::VERSION
   end
 
   def test_engine_exists
@@ -14,14 +14,14 @@ class RecordingStudioBroadcastsTest < Minitest::Test
   def test_gemspec_pins_sibling_gems
     gemspec = File.read(File.expand_path("../recording_studio_broadcasts.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.7"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.3.0", "< 7"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.18"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_admin", ">= 2.4", "< 2.5"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications", ">= 0.11.0", "< 0.12"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications_email", ">= 0.3.15", "< 0.4"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_publishable", ">= 0.9.2", "< 0.10"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_attachable", ">= 0.15", "< 0.21"'
-    assert_includes gemspec, 'spec.add_dependency "flat_pack", "~> 0.1.254"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_admin", ">= 2.9.1", "< 3"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications", ">= 0.14.8", "< 0.15"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications_email", ">= 0.5.2", "< 0.6"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_publishable", ">= 0.13.0", "< 0.14"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_attachable", ">= 0.22.0", "< 0.23"'
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.341", "< 0.2"'
   end
 
   def test_gemspec_excludes_cursor_config
@@ -68,18 +68,19 @@ class RecordingStudioBroadcastsTest < Minitest::Test
 
   def test_both_gemfiles_pin_verified_github_tags
     pins = {
-      "RecordingStudio" => "v4.7.0",
-      "RecordingStudio_accessible" => "v0.20.0",
-      "RecordingStudio_attachable" => "v0.20.0",
-      "RecordingStudio_publishable" => "v0.9.2",
-      "RecordingStudio_admin" => "v2.4.0",
-      "RecordingStudio_notifications" => "v0.11.0",
-      "RecordingStudio_notifications_email" => "v0.3.15",
-      "flatpack" => "v0.1.254",
-      "RecordingStudio_metrics" => "v0.3.1",
-      "RecordingStudio_root_switchable" => "v0.9.4",
-      "RecordingStudio_trashable" => "v0.11.0",
-      "RecordingStudio_cache" => "v0.5.0"
+      "RecordingStudio" => "v6.3.0",
+      "RecordingStudio_accessible" => "v0.24.1",
+      "RecordingStudio_attachable" => "v0.22.0",
+      "RecordingStudio_publishable" => "v0.13.0",
+      "RecordingStudio_admin" => "v2.9.1",
+      "RecordingStudio_notifications" => "v0.14.8",
+      "RecordingStudio_notifications_email" => "v0.5.2",
+      "flatpack" => "v0.1.341",
+      "RecordingStudio_metrics" => "v0.7.2",
+      "RecordingStudio_root_switchable" => "v0.11.5",
+      "RecordingStudio_trashable" => "v0.12.2",
+      "RecordingStudio_cache" => "v0.6.2",
+      "RecordingStudio_logs" => "v0.7.3"
     }
 
     [File.expand_path("../Gemfile", __dir__), File.expand_path("dummy/Gemfile", __dir__)].each do |path|
@@ -139,9 +140,10 @@ class RecordingStudioBroadcastsTest < Minitest::Test
     application_controller_path = File.expand_path("dummy/app/controllers/application_controller.rb", __dir__)
     controller_source = File.read(application_controller_path)
 
-    assert_includes controller_source, "include RecordingStudio::UsesDefaultLayout"
+    assert_includes controller_source, "recording_studio_layout"
     assert_includes controller_source, '"recording_studio/default_layout"'
     assert_includes controller_source, "devise_controller? ? \"application\""
+    refute_includes controller_source, "UsesDefaultLayout"
     refute_includes controller_source, "flat_pack_sidebar"
     refute File.exist?(File.expand_path("dummy/app/views/layouts/flat_pack_sidebar.html.erb", __dir__))
     refute File.exist?(File.expand_path("dummy/app/views/layouts/flat_pack/_sidebar.html.erb", __dir__))

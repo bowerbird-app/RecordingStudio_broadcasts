@@ -2,11 +2,7 @@
 
 module RecordingStudioBroadcasts
   class Configuration
-    Recipients = Data.define(:relation, :email, :name) do
-      def email_for(recipient)
-        email.respond_to?(:call) ? email.call(recipient) : recipient.public_send(email)
-      end
-    end
+    Recipients = Data.define(:relation)
 
     attr_accessor :batch_size, :admin_root_type
 
@@ -15,8 +11,8 @@ module RecordingStudioBroadcasts
       @admin_root_type = "AdminRoot"
     end
 
-    def recipients(relation: nil, email: :email, name: nil)
-      return @recipients = Recipients.new(relation:, email:, name:) if relation
+    def recipients(relation: nil)
+      return @recipients = Recipients.new(relation:) if relation
 
       @recipients || raise(Error, "Call config.recipients(relation: -> { ... }) in your initializer")
     end

@@ -5,13 +5,11 @@ RecordingStudioBroadcasts.configure do |config|
   config.admin_root_type = "<%= options[:admin_root_type] %>"
 
   config.recipients(
-    relation: -> { User.all },
-    email: :email,
-    name: :email
+    relation: -> { User.all }
   )
 end
 
-# When the address is not `#email`, give the email channel the same lookup:
+# Addresses come from the email channel's register (it defaults to `#email`):
 # RecordingStudioNotificationsEmail.config.recipients.register("User", ->(user) { user.contact_email })
 
 # RecordingStudioBroadcasts.register_filter(:registered_after, label: "Joined after", input: :date) do |scope, value|

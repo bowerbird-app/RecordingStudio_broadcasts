@@ -38,7 +38,7 @@ module RecordingStudioBroadcasts
     # The Publishable write has already committed. The retry is a later transaction.
     def draft_or_retry!(recording, editor)
       return_to_draft!(recording, editor)
-    rescue StandardError => e
+    rescue InvalidTransition, ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
       log_draft_failure(recording, e)
       enqueue_reconcile(recording, editor)
     end

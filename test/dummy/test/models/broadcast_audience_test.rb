@@ -42,6 +42,16 @@ class BroadcastAudienceTest < ActiveSupport::TestCase
     assert_equal({ matching: 0, eligible: 0, excluded: 0 }, RecordingStudioBroadcasts.preview(recording))
   end
 
+  test "preview uses the email channel address register" do
+    RecordingStudioNotificationsEmail.config.recipients.register(User) do |user|
+      user.email == "ready@example.com" ? "bounced@example.com" : user.email
+    end
+
+    assert_equal({ matching: 3, eligible: 0, excluded: 3 }, RecordingStudioBroadcasts.preview(@recording))
+  ensure
+    RecordingStudioNotificationsEmail.config.recipients.clear!
+  end
+
   test "snapshot inserts each ready person once" do
     2.times { RecordingStudioBroadcasts::Audience.snapshot!(@recording) }
 
