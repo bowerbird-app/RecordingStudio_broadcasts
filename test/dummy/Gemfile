@@ -24,6 +24,10 @@ gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics",
 gem "recording_studio_cache", github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.2"
 # Required by admin 2.9+ (GitHub-only; not on RubyGems)
 gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.3"
+# Optional JSON / MCP surface. Broadcasts registers Campaign on the operations API only.
+gem "recording_studio_api", github: "bowerbird-app/RecordingStudio_api", tag: "v0.21.3"
+gem "recording_studio_icons", github: "bowerbird-app/RecordingStudio_icons", tag: "v0.2.1"
+gem "recording_studio_moveable", github: "bowerbird-app/RecordingStudio_moveable", tag: "v4.1.1"
 
 # Devise authentication
 gem "devise"

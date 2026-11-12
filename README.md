@@ -98,6 +98,27 @@ RecordingStudioBroadcasts.unpublish(recording, actor: user)
 RecordingStudioBroadcasts.cancel(recording, actor: user)
 ```
 
+The same Campaign actions are on Recording Studio API's **operations** API (and MCP through that
+generic path). They are not on the public API. Accessible roles match the Admin screens: view can
+read and preview; send, schedule, unpublish, cancel, test send, create, update, and delete need
+admin. Broadcast includes Publishable, so this gem turns off automatic publish actions and registers
+only Campaign's send path.
+
+```ruby
+# Operations API, not /api/v1
+GET    /recording_studio_api/apis/operations/v1/broadcasts
+POST   /recording_studio_api/apis/operations/v1/broadcasts
+GET    /recording_studio_api/apis/operations/v1/broadcasts/:id
+PATCH  /recording_studio_api/apis/operations/v1/broadcasts/:id
+DELETE /recording_studio_api/apis/operations/v1/broadcasts/:id
+GET    /recording_studio_api/apis/operations/v1/broadcasts/:id/actions/preview
+POST   /recording_studio_api/apis/operations/v1/broadcasts/:id/actions/send
+POST   /recording_studio_api/apis/operations/v1/broadcasts/:id/actions/schedule
+POST   /recording_studio_api/apis/operations/v1/broadcasts/:id/actions/unpublish
+POST   /recording_studio_api/apis/operations/v1/broadcasts/:id/actions/cancel
+POST   /recording_studio_api/apis/operations/v1/broadcasts/:id/actions/test_send
+```
+
 `schedule` stores the send time as Publishable's `publish_at`. Publishable enqueues `WindowTransitionJob` for that time, and the published event sends the broadcast. A publish time that is already due sends immediately. Unpublishing before that time returns the broadcast to draft and sends nothing. `sent_at` is set when sending starts, so a second publish, a reschedule, or a job from an older clock cannot send twice.
 
 Launch copies the ready audience into a recipients table, then a job sends in batches of `batch_size`. Each person gets one email per broadcast, even if the job retries. People who turned off product updates, or whose address is suppressed, are skipped and counted. The unsubscribe link and `List-Unsubscribe` headers come from the email channel.

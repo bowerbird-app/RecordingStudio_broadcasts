@@ -3,6 +3,7 @@ Rails.application.routes.draw do
 
   get "/recording_studio", to: redirect("/"), as: nil
   mount RecordingStudio::Engine, at: "/recording_studio"
+  mount RecordingStudioApi::Engine, at: "/recording_studio_api"
   mount RecordingStudioRootSwitchable::Engine, at: "/recording_studio_root_switchable"
   mount RecordingStudioNotifications::Engine, at: "/notifications"
   mount RecordingStudioAccessible::Engine, at: "/admin/access"

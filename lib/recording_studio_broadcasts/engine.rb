@@ -61,6 +61,8 @@ module RecordingStudioBroadcasts
       RecordingStudioAdmin.register_section(RecordingStudioBroadcasts::BroadcastsSection)
       RecordingStudioAdmin.register_screen(RecordingStudioBroadcasts::BroadcastsScreen)
       RecordingStudioAdmin.register_resource(RecordingStudioBroadcasts::BroadcastsResource)
+      require "recording_studio_broadcasts/api"
+      RecordingStudioBroadcasts::Api.register!
     end
   end
 end

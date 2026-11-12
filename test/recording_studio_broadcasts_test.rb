@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioBroadcastsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.3.1", ::RecordingStudioBroadcasts::VERSION
+    assert_equal "0.4.0", ::RecordingStudioBroadcasts::VERSION
   end
 
   def test_engine_exists
@@ -80,7 +80,10 @@ class RecordingStudioBroadcastsTest < Minitest::Test
       "RecordingStudio_root_switchable" => "v0.11.5",
       "RecordingStudio_trashable" => "v0.12.2",
       "RecordingStudio_cache" => "v0.6.2",
-      "RecordingStudio_logs" => "v0.7.3"
+      "RecordingStudio_logs" => "v0.7.3",
+      "RecordingStudio_api" => "v0.21.3",
+      "RecordingStudio_icons" => "v0.2.1",
+      "RecordingStudio_moveable" => "v4.1.1"
     }
 
     [File.expand_path("../Gemfile", __dir__), File.expand_path("dummy/Gemfile", __dir__)].each do |path|
