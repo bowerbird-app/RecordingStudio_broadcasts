@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0]
+
+### Added
+
+- Campaigns are on the operations API: list, show, create, update, and destroy go through `Campaign`. Send now, schedule, unpublish, cancel, test send, and preview go through the same methods the admin screens already call.
+- Broadcast stays off the public API. Publishable's generic publish actions stay off for this type (`auto_capability_actions: false`). Unpublish still uses this gem's Campaign path.
+
+### Upgrade notes
+
+- Hosts that expose campaigns over JSON need `recording_studio_api` `v0.21.3` (or newer in the 0.21 line), an `:operations` named API, and `api_access_point` on the admin root. MCP follows the operations endpoints; there is no separate MCP surface.
+- Access matches the admin screens: `:view` for show, index, and preview; `:admin` for write, send, schedule, unpublish, cancel, and test send.
+
 ## [0.3.1]
 
 ### Changed

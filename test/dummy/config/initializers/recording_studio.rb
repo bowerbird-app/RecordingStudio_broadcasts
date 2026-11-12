@@ -8,6 +8,7 @@ RecordingStudio.configure do |config|
     "RecordingStudioPublishable::Publishable",
     "RecordingStudioAttachable::Attachment"
   ]
+  config.enable_capability(:api_access_point, on: "AdminRoot")
 
   # Require each configured ActiveRecord type to call recording_studio_recordable.
   config.require_recordable_declarations = true
