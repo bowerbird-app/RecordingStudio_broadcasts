@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.0]
+
+### Added
+
+- Campaign create, show, update, delete, send, schedule, unpublish, cancel, test send, and preview
+  on Recording Studio API's operations surface. Same Accessible roles as the Admin screens. The
+  public API does not list broadcasts. Publishable's own publish/unpublish actions stay off this
+  type (`auto_capability_actions: false`); send goes through `publish_now`.
+
+### Upgrade notes
+
+- Bump to `0.4.0`. No host migration.
+- Hosts that want the JSON/MCP surface add `recording_studio_api` and register an `:operations`
+  API. This gem does not add a public Campaign API.
+
 ## [0.3.1]
 
 ### Changed
