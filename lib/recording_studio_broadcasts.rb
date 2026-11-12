@@ -12,6 +12,7 @@ require "recording_studio_broadcasts/version"
 require "recording_studio_broadcasts/configuration"
 require "recording_studio_broadcasts/filter_registry"
 require "recording_studio_broadcasts/engine"
+require "recording_studio_broadcasts/api"
 
 module RecordingStudioBroadcasts
   NOTIFICATION_TYPE = :product_update
