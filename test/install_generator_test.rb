@@ -25,6 +25,7 @@ class InstallGeneratorTest < Minitest::Test
       assert_includes initializer, "RecordingStudioBroadcasts.configure do |config|"
       assert_includes initializer, 'config.admin_root_type = "AdminRoot"'
       assert_includes initializer, "config.recipients("
+      refute_includes initializer, "batch_size"
       assert_includes initializer, "# RecordingStudioBroadcasts.register_filter(:registered_after"
       refute_includes initializer, "config.from"
       assert_includes output, "bin/rails generate recording_studio_broadcasts:migrations"

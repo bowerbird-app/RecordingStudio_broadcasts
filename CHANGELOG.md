@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.0]
+
+### Changed
+
+- Sending enqueues `RecordingStudioNotifications.notify_fan_out` for the `recording_studio_broadcasts.snapshot` recipient scope. Notifications inserts the snapshotted audience in chunks of 1,000 and dedupes on one idempotency key per broadcast (`broadcast/<recording id>`).
+- `config.batch_size` is removed. Broadcasts no longer claims recipient rows or calls `notify` once per person.
+
+### Upgrade notes
+
+- Pin `recording_studio_notifications` to `v0.16.0` or newer, below `0.17`, and FlatPack to `v0.1.353` or newer. Notifications 0.16.0 requires that FlatPack. No Broadcasts migration.
+- Remove `config.batch_size` from the Broadcasts initializer.
+- Cancel still skips snapshot rows that are waiting. Fan-out has no cancel hook, so a chunk already loaded (up to 1,000 people) can still be emailed. Later chunks read the snapshot again and leave cancelled rows out.
+- Fan-out does not write `recording_studio_broadcast_recipients`. Broadcasts still records sent, preference skip, suppression skip, and failure on those rows, which is what the detail page counts.
+- A test send still uses synchronous `notify` with its own idempotency key, so the page can tell a first test from a repeat.
+
 ## [0.3.2]
 
 ### Changed

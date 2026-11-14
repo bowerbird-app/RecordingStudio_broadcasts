@@ -40,77 +40,108 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
     assert_equal "List-Unsubscribe=One-Click", mail["List-Unsubscribe-Post"].value
     assert_equal %w[sent sent], Recipient.where(recording_id: @recording.id).pluck(:status)
     assert_equal "completed", broadcast_status(@recording)
+    assert_raises(ArgumentError) { RecordingStudioBroadcasts.launch(@recording, actor: nil) }
   end
 
-  test "a retry after a crash finds the existing notification and sends nothing more" do
-    RecordingStudioBroadcasts::Audience.snapshot!(@recording)
-    Campaign.revise!(@recording, actor: nil, status: "sending")
-    row = Recipient.find_by!(recording_id: @recording.id, recipient_id: @ann.id)
-    assert_emails(1) { Delivery.deliver_one(row) }
-    row.update_columns(status: "sending", notification_id: nil, claimed_at: 20.minutes.ago)
+  test "a retry after the snapshot rows were not recorded sends nothing more" do
+    start_sending!
+    key = Delivery.idempotency_key(@recording)
 
-    assert_emails 1 do
-      perform_enqueued_jobs { RecordingStudioBroadcasts::DeliverBroadcastJob.perform_now(@recording) }
+    Delivery.stub(:finish, nil) do
+      assert_emails(2) { deliver! }
+      assert_equal 2, notifications_for(key).count
+
+      Recipient.where(recording_id: @recording.id).update_all(
+        status: "pending", skip_reason: nil, notification_id: nil, claimed_at: nil, updated_at: Time.current
+      )
+
+      assert_no_emails { deliver! }
     end
 
-    assert_equal "sent", row.reload.status
-    assert_predicate row.notification_id, :present?
+    assert_equal %w[sent sent], Recipient.where(recording_id: @recording.id).pluck(:status)
+    assert_equal 2, notifications_for(key).count
+    Delivery.finish(@recording, @ann)
     assert_equal "completed", broadcast_status(@recording)
-    assert_no_emails do
-      assert_raises(ArgumentError) { RecordingStudioBroadcasts.launch(@recording, actor: nil) }
-    end
   end
 
   test "cancel skips the people not yet sent to and sends nothing more" do
     RecordingStudioBroadcasts.launch(@recording, actor: @ann)
     RecordingStudioBroadcasts.cancel(@recording, actor: @ann)
 
-    assert_no_emails { perform_enqueued_jobs }
+    assert_no_emails { 4.times { perform_enqueued_jobs } }
     assert_equal [ %w[skipped cancelled] ] * 2, Recipient.where(recording_id: @recording.id).pluck(:status, :skip_reason)
     assert_equal "cancelled", broadcast_status(@recording)
     assert_no_enqueued_jobs
   end
 
-  test "an email adapter delivery error marks that row failed and leaves the others" do
-    RecordingStudioBroadcasts::Audience.snapshot!(@recording)
-    Campaign.revise!(@recording, actor: nil, status: "sending")
-    bob = Recipient.find_by!(recording_id: @recording.id, recipient_id: @bob.id)
-    ann = Recipient.find_by!(recording_id: @recording.id, recipient_id: @ann.id)
+  test "cancel during fan-out stops the chunks that have not been loaded" do
+    start_sending!
+    chunks = 0
+    record_chunk = Delivery.method(:record_chunk)
 
-    RecordingStudioNotificationsEmail.configuration.stub(:from, nil) do
-      Delivery.deliver_one(bob)
+    Delivery.stub(:record_chunk, lambda { |recording, people|
+      record_chunk.call(recording, people)
+      chunks += 1
+      RecordingStudioBroadcasts.cancel(@recording, actor: @ann) if chunks == 1
+    }) do
+      RecordingStudioNotifications::Services::FanOut.stub(:chunk_size, 1) do
+        assert_emails(1) { deliver! }
+      end
     end
 
-    assert_equal "failed", bob.reload.status
-    assert_equal "pending", ann.reload.status
-    delivery = RecordingStudioNotifications::Notification.find(bob.notification_id)
-                                                         .deliveries.find_by!(channel: "email")
+    counts = Recipient.where(recording_id: @recording.id).group(:status, :skip_reason).count
+    assert_equal 1, counts[["sent", nil]]
+    assert_equal 1, counts[["skipped", "cancelled"]]
+    assert_equal "cancelled", broadcast_status(@recording)
+  end
+
+  test "an email adapter delivery error marks that person failed and still sends the others" do
+    start_sending!
+    adapter = RecordingStudioNotifications.channels.fetch(:email)
+    original = adapter.method(:deliver)
+
+    adapter.stub(:deliver, failure_for(@bob, original)) do
+      assert_emails(1) { deliver! }
+    end
+
+    bob = Recipient.find_by!(recording_id: @recording.id, recipient_id: @bob.id)
+    ann = Recipient.find_by!(recording_id: @recording.id, recipient_id: @ann.id)
+    assert_equal "failed", bob.status
+    assert_equal "sent", ann.status
+    delivery = RecordingStudioNotifications::Notification.find(bob.notification_id).deliveries.find_by!(channel: "email")
     refute_predicate delivery, :delivered?
     assert_match(/from/i, delivery.error_message)
+    assert_equal "completed", broadcast_status(@recording)
   end
 
   test "someone who turns product updates off after launch is skipped without a notification" do
-    RecordingStudioBroadcasts::Audience.snapshot!(@recording)
-    Campaign.revise!(@recording, actor: nil, status: "sending")
+    start_sending!
     RecordingStudioNotifications::Preference.set!(
       recipient: @bob, notification_type: :product_update, channel: :email, enabled: false
     )
-    row = Recipient.find_by!(recording_id: @recording.id, recipient_id: @bob.id)
 
-    assert_no_difference -> { RecordingStudioNotifications::Notification.count } do
-      assert_no_emails { Delivery.deliver_one(row) }
+    assert_no_difference -> { RecordingStudioNotifications::Notification.where(recipient_id: @bob.id).count } do
+      assert_emails(1) { deliver! }
     end
-    assert_equal [ "skipped", "preference" ], [ row.reload.status, row.skip_reason ]
+
+    row = Recipient.find_by!(recording_id: @recording.id, recipient_id: @bob.id)
+    assert_equal [ "skipped", "preference" ], [ row.status, row.skip_reason ]
+    assert_equal "sent", Recipient.find_by!(recording_id: @recording.id, recipient_id: @ann.id).status
+    assert_equal "completed", broadcast_status(@recording)
   end
 
   test "a suppressed address is skipped with reason suppressed" do
-    RecordingStudioBroadcasts::Audience.snapshot!(@recording)
-    Campaign.revise!(@recording, actor: nil, status: "sending")
-    RecordingStudioNotificationsEmail::Suppression.suppress!(address: "bob@example.com", reason: "complaint", provider: "test")
-    row = Recipient.find_by!(recording_id: @recording.id, recipient_id: @bob.id)
+    start_sending!
+    RecordingStudioNotificationsEmail::Suppression.suppress!(
+      address: "bob@example.com", reason: "complaint", provider: "test"
+    )
 
-    assert_no_emails { Delivery.deliver_one(row) }
-    assert_equal [ "skipped", "suppressed" ], [ row.reload.status, row.skip_reason ]
+    assert_emails(1) { deliver! }
+
+    row = Recipient.find_by!(recording_id: @recording.id, recipient_id: @bob.id)
+    assert_equal [ "skipped", "suppressed" ], [ row.status, row.skip_reason ]
+    assert_equal [ "ann@example.com" ], ActionMailer::Base.deliveries.flat_map(&:to)
+    assert_equal "completed", broadcast_status(@recording)
   end
 
   test "a test send emails only the person asking and leaves the draft alone" do
@@ -149,5 +180,28 @@ class BroadcastDeliveryTest < ActiveSupport::TestCase
       assert_equal "sending", broadcast_status(@recording)
     end
     assert_enqueued_with(job: RecordingStudioBroadcasts::DeliverBroadcastJob, args: [ @recording, @ann ])
+  end
+
+  private
+
+  def start_sending!
+    RecordingStudioBroadcasts::Audience.snapshot!(@recording)
+    Campaign.revise!(@recording, actor: @ann, status: "sending")
+  end
+
+  def deliver!
+    perform_enqueued_jobs { RecordingStudioBroadcasts::DeliverBroadcastJob.perform_now(@recording, @ann) }
+  end
+
+  def notifications_for(key)
+    RecordingStudioNotifications::Notification.where(idempotency_key: key)
+  end
+
+  def failure_for(person, original)
+    lambda do |notification:, delivery:|
+      raise RecordingStudioNotificationsEmail::DeliveryError, "from is missing" if notification.recipient_id == person.id
+
+      original.call(notification:, delivery:)
+    end
   end
 end

@@ -12,7 +12,7 @@ These gems are not on RubyGems. Pin them from GitHub in the host `Gemfile`:
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.12.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.1"
 gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.9.1"
-gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.14.8"
+gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.16.0"
 gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.5.2"
 gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.22.0"
 gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v0.13.0"
@@ -58,7 +58,6 @@ end
 
 ```ruby
 RecordingStudioBroadcasts.configure do |config|
-  config.batch_size = 100
   config.admin_root_type = "AdminRoot"
   config.recipients(
     relation: -> { User.all }
@@ -100,7 +99,7 @@ RecordingStudioBroadcasts.cancel(recording, actor: user)
 
 `schedule` stores the send time as Publishable's `publish_at`. Publishable enqueues `WindowTransitionJob` for that time, and the published event sends the broadcast. A publish time that is already due sends immediately. Unpublishing before that time returns the broadcast to draft and sends nothing. `sent_at` is set when sending starts, so a second publish, a reschedule, or a job from an older clock cannot send twice.
 
-Launch copies the ready audience into a recipients table, then a job sends in batches of `batch_size`. Each person gets one email per broadcast, even if the job retries. People who turned off product updates, or whose address is suppressed, are skipped and counted. The unsubscribe link and `List-Unsubscribe` headers come from the email channel.
+Launch copies the ready audience into a recipients table, then enqueues `RecordingStudioNotifications.notify_fan_out` for that snapshot. Notifications writes the rows in chunks of 1,000. One idempotency key per broadcast means a retry does not email the same person again. Someone who turns product updates off after launch is skipped and counted. A suppressed address is skipped when the email channel refuses it, and counted. Cancel marks people who are still waiting as skipped, and later chunks leave them out. A chunk already loaded, up to 1,000 people, can still be emailed. The detail page counts Waiting, Sending, Sent, Skipped, and Failed from the snapshot rows. A test send is one synchronous notification, with its own idempotency key. The unsubscribe link and `List-Unsubscribe` headers come from the email channel.
 
 ## Development
 

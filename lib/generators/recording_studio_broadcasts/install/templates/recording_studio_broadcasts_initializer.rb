@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 RecordingStudioBroadcasts.configure do |config|
-  config.batch_size = 100
   config.admin_root_type = "<%= options[:admin_root_type] %>"
 
   config.recipients(

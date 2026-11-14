@@ -72,11 +72,11 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_notifications.git
-  revision: d09e13ee40901f0a5b71ba453164a304ffad3d3e
-  tag: v0.14.8
+  revision: b1ff1c87ccc355017a6c67b63f49b882b9e797e2
+  tag: v0.16.0
   specs:
-    recording_studio_notifications (0.14.8)
-      flat_pack (>= 0.1.341)
+    recording_studio_notifications (0.16.0)
+      flat_pack (>= 0.1.353)
       rails (~> 8.1.0)
       recording_studio (>= 6.3.0)
       recording_studio_accessible (~> 0.18)
@@ -131,26 +131,26 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/flatpack.git
-  revision: 374c9b7f7130057954df596597ff75f139c72b50
-  tag: v0.1.341
+  revision: e921b48cb41219902939be0697260b0ac317be01
+  tag: v0.1.353
   specs:
-    flat_pack (0.1.341)
+    flat_pack (0.1.353)
       pagy (~> 9.0)
       rails (>= 7.1, < 9)
-      tailwind_merge (~> 0.13)
+      tailwind_merge (>= 0.13, < 2)
       view_component (>= 4.14, < 5)
 
 PATH
   remote: .
   specs:
-    recording_studio_broadcasts (0.3.2)
-      flat_pack (>= 0.1.341, < 0.2)
+    recording_studio_broadcasts (0.4.0)
+      flat_pack (>= 0.1.353, < 0.2)
       rails (~> 8.1.0)
       recording_studio (>= 6.12.0, < 7)
       recording_studio_accessible (~> 0.18)
       recording_studio_admin (>= 2.9.1, < 3)
       recording_studio_attachable (>= 0.22.0, < 0.23)
-      recording_studio_notifications (>= 0.14.8, < 0.15)
+      recording_studio_notifications (>= 0.16.0, < 0.17)
       recording_studio_notifications_email (>= 0.5.2, < 0.6)
       recording_studio_publishable (>= 0.13.0, < 0.14)
 
@@ -407,7 +407,7 @@ GEM
       actionpack (>= 6.1)
       activesupport (>= 6.1)
       sprockets (>= 3.0.0)
-    tailwind_merge (0.16.0)
+    tailwind_merge (1.5.6)
       sin_lru_redux (~> 2.5)
     thor (1.5.0)
     timeout (0.6.1)
@@ -492,7 +492,7 @@ CHECKSUMS
   drb (2.2.3) sha256=0b00d6fdb50995fe4a45dea13663493c841112e4068656854646f418fda13373
   erb (6.0.7) sha256=c5ca6dc25b0ef974a44dc8f59fe847577122483b1968a38dec305c60bf91ee92
   erubi (1.13.1) sha256=a082103b0885dbc5ecf1172fede897f9ebdb745a4b97a5e8dc63953db1ee4ad9
-  flat_pack (0.1.341)
+  flat_pack (0.1.353)
   globalid (1.4.0) sha256=037f12fbf1d9d7a014d501c2d5c77356fd4ddd96d7a7991d6700bba96706f427
   i18n (1.15.2) sha256=00f9eb62412fe593b2a65a97daa75300d37abb8f7202ec748e94b6d46a9dd1b5
   io-console (0.9.5) sha256=83dd9bbf4c4680416629245b39cd4212eb5f4d9a4ea91804870c1f6b846414d5
@@ -545,11 +545,11 @@ CHECKSUMS
   recording_studio_accessible (0.24.1)
   recording_studio_admin (2.9.1)
   recording_studio_attachable (0.22.0)
-  recording_studio_broadcasts (0.3.2)
+  recording_studio_broadcasts (0.4.0)
   recording_studio_cache (0.6.2)
   recording_studio_logs (0.7.3)
   recording_studio_metrics (0.7.2)
-  recording_studio_notifications (0.14.8)
+  recording_studio_notifications (0.16.0)
   recording_studio_notifications_email (0.5.2)
   recording_studio_publishable (0.13.0)
   recording_studio_root_switchable (0.11.5)
@@ -566,7 +566,7 @@ CHECKSUMS
   sin_lru_redux (2.5.3) sha256=d9bcc184537cb0781cccfb283a18d36c5b820cf811b2637b398b55e98f4cecbd
   sprockets (4.4.1) sha256=fbd665edad0916de5c7abefef0fc616866a60c5e48ce2846f39ac3fc5df9e184
   sprockets-rails (3.5.2) sha256=a9e88e6ce9f8c912d349aa5401509165ec42326baf9e942a85de4b76dbc4119e
-  tailwind_merge (0.16.0) sha256=e2a2b26aaef57ae6af6d0e98380bbcbf324ce4e9778cd56df8e837c30e66005c
+  tailwind_merge (1.5.6) sha256=bf9b492446af3caafb4a4976465153eb800f6b4df2538974dee0e4acc5457530
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
   timeout (0.6.1) sha256=78f57368a7e7bbadec56971f78a3f5ecbcfb59b7fcbb0a3ed6ddc08a5094accb
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f

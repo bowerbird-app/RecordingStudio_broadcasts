@@ -444,9 +444,9 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     end
   end
 
-  # The window job enqueues delivery when it runs, so one flush is not enough.
+  # Window job, then DeliverBroadcastJob, then FanOutJob, then FanOutDeliveryJob.
   def drain_due_jobs
-    4.times { perform_enqueued_jobs(at: Time.current) }
+    6.times { perform_enqueued_jobs(at: Time.current) }
   end
 
   def editor
