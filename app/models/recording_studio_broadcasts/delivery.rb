@@ -2,46 +2,68 @@
 
 module RecordingStudioBroadcasts
   module Delivery
-    SUPPRESSED_MESSAGE = "email recipient is suppressed"
+    SCOPE = "recording_studio_broadcasts.snapshot"
+    FAN_OUT = :recording_studio_broadcasts_fan_out
 
     module_function
 
-    def claim(recording)
-      Recipient.transaction do
-        current = RecordingStudio::Recording.unscoped.lock("FOR SHARE").find(recording.id)
-        current.recordable.status == "sending" ? claim_batch(recording.id) : []
-      end
+    def install!
+      return if @installed
+
+      @installed = true
+      register_scope
+      subscribe_deliveries
     end
 
-    def deliver_one(row)
-      row.update!(attempt(row))
-    rescue RecordingStudioNotificationsEmail::SuppressedRecipientError
-      row.update!(status: "skipped", skip_reason: "suppressed")
-    rescue StandardError => e
-      Rails.error.report(e, handled: true, context: { broadcast_recipient_id: row.id })
-      row.update!(status: "failed")
-    end
-
-    def finished?(recording)
-      Recipient.where(recording_id: recording.id, status: %w[pending sending]).none?
+    def idempotency_key(recording)
+      "broadcast/#{recording.id}"
     end
 
     def test_send(recording, actor:)
       notify(recording, actor, "broadcast/#{recording.id}/test/#{actor.class.name}/#{actor.id}")
     end
 
-    def claim_batch(recording_id)
-      ids = Recipient.where(recording_id:).claimable.order(:id).lock("FOR UPDATE SKIP LOCKED")
-                     .limit(RecordingStudioBroadcasts.configuration.batch_size).pluck(:id)
-      now = Time.current
-      Recipient.where(id: ids).update_all(status: "sending", claimed_at: now, updated_at: now)
-      Recipient.where(id: ids).order(:id).includes(:recipient, recording: :recordable).to_a
+    def finished?(recording)
+      Recipient.where(recording_id: recording.id, status: %w[pending sending]).none?
     end
 
-    def attempt(row)
-      key = "broadcast/#{row.recording_id}/#{row.recipient_type}/#{row.recipient_id}"
-      notification = notify(row.recording, row.recipient, key)
-      { notification_id: notification&.id, **outcome(notification) }
+    def within_fan_out
+      previous = Thread.current[FAN_OUT]
+      Thread.current[FAN_OUT] = true
+      yield
+    ensure
+      Thread.current[FAN_OUT] = previous
+    end
+
+    def fan_out_active?
+      Thread.current[FAN_OUT]
+    end
+
+    def record_chunk(recording, people)
+      DeliveryStatus.record_chunk(recording, people)
+    end
+
+    def record_delivery(event)
+      DeliveryStatus.record_delivery(event)
+    end
+
+    def finish(recording, actor)
+      current = recording.reload
+      return unless current.recordable.status == "sending" && finished?(current)
+
+      Campaign.complete!(current, actor:)
+    end
+
+    def register_scope
+      RecordingStudioNotifications.register_recipient_scope(SCOPE) do |context|
+        SnapshotScope.new(recording: context.recording, actor: context.actor)
+      end
+    end
+
+    def subscribe_deliveries
+      ActiveSupport::Notifications.subscribe("deliver.recording_studio_notifications") do |*args|
+        record_delivery(ActiveSupport::Notifications::Event.new(*args))
+      end
     end
 
     def notify(recording, recipient, idempotency_key)
@@ -52,17 +74,6 @@ module RecordingStudioBroadcasts
         channels: [:email], inbox: false, deliver_later: false
       )
     end
-
-    def outcome(notification)
-      return { status: "skipped", skip_reason: "preference" } if notification.nil?
-
-      delivery = notification.deliveries.find_by(channel: "email")
-      return { status: "sent" } if delivery&.delivered?
-      return { status: "skipped", skip_reason: "suppressed" } if delivery&.error_message == SUPPRESSED_MESSAGE
-
-      { status: "failed" }
-    end
-
-    private_class_method :claim_batch, :attempt, :notify, :outcome
+    private_class_method :register_scope, :subscribe_deliveries, :notify
   end
 end

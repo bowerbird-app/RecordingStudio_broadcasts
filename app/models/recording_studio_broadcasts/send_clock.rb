@@ -6,7 +6,7 @@ module RecordingStudioBroadcasts
   module SendClock
     # sent_at is the idempotency guard. A reschedule, a late job, or a second
     # publish must not snapshot the audience again. A send already in progress
-    # may re-enqueue delivery; that path claims each recipient once.
+    # may enqueue fan-out again; the broadcast idempotency key stops a second email.
     def launch(recording, actor:, scheduled_at: nil)
       raise ArgumentError, "actor is required" if actor.nil?
 

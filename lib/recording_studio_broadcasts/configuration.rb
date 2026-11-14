@@ -4,10 +4,9 @@ module RecordingStudioBroadcasts
   class Configuration
     Recipients = Data.define(:relation)
 
-    attr_accessor :batch_size, :admin_root_type
+    attr_accessor :admin_root_type
 
     def initialize
-      @batch_size = 100
       @admin_root_type = "AdminRoot"
     end
 

@@ -10,7 +10,6 @@ class ConfigurationTest < Minitest::Test
   end
 
   def test_defaults
-    assert_equal 100, @configuration.batch_size
     assert_equal "AdminRoot", @configuration.admin_root_type
   end
 
