@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.2]
+
+### Changed
+
+- Deleting a broadcast loads every snapshot with `recordables(all: true)`. Recording Studio 6.12.0 returns 50 by default and pages with `limit:` and `cursor:`. A draft with more than 50 revisions would otherwise leave the older snapshots in `recording_studio_broadcasts`.
+
+### Upgrade notes
+
+- Delete calls `Recording#recordables(all: true)`, which Recording Studio added in 6.12.0. Core 6.3.0 defines `recordables` with no arguments, so delete raises `ArgumentError` until the host is on 6.12.0 or newer.
+- The dependency floor stays `>= 6.3.0`. Tests that delete a broadcast need Recording Studio 6.12.0.
+
 ## [0.3.1]
 
 ### Changed
