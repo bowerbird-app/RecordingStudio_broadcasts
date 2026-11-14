@@ -15,6 +15,7 @@ class BroadcastPublishScheduleTest < ActiveSupport::TestCase
     @ann = create_user("ann@example.com")
     @bob = create_user("bob@example.com")
     grant_sender!(@ann)
+    Current.actor = @ann
     @recording = create_broadcast
   end
 

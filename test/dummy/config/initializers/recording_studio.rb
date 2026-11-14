@@ -18,6 +18,9 @@ RecordingStudio.configure do |config|
   # Actor resolver for events when no actor is explicitly supplied
   config.actor = -> { Current.actor }
 
+  # Writes fail closed. A present actor may write.
+  config.authorize_write = ->(actor:, **) { actor.present? }
+
   # Emit ActiveSupport::Notifications events
   config.event_notifications_enabled = true
 

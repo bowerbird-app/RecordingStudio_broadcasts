@@ -5,6 +5,8 @@ require "test_helper"
 class BroadcastCampaignTest < ActiveSupport::TestCase
   Campaign = RecordingStudioBroadcasts::Campaign
 
+  setup { Current.actor = create_user("campaign-writer@example.com") }
+
   test "a new broadcast is a draft child of the admin root" do
     recording = create_broadcast
 

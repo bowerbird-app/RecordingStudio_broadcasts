@@ -13,6 +13,7 @@ class BroadcastAudienceTest < ActiveSupport::TestCase
     RecordingStudioNotifications::Preference.set!(
       recipient: @opted_out, notification_type: :product_update, channel: :email, enabled: false
     )
+    Current.actor = @ready
     @recording = create_broadcast(filter_params: { "registered_after" => "2099-12-31" })
   end
 
@@ -37,6 +38,7 @@ class BroadcastAudienceTest < ActiveSupport::TestCase
   end
 
   test "a saved filter the host no longer registers matches nobody" do
+    Current.actor = @ready
     recording = create_broadcast(filter_params: { "plan" => "pro" })
 
     assert_equal({ matching: 0, eligible: 0, excluded: 0 }, RecordingStudioBroadcasts.preview(recording))

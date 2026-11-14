@@ -9,7 +9,7 @@ Each broadcast is a Recording under the admin root, so edits and status changes 
 These gems are not on RubyGems. Pin them from GitHub in the host `Gemfile`:
 
 ```ruby
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.12.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.1"
 gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.9.1"
 gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.14.8"
