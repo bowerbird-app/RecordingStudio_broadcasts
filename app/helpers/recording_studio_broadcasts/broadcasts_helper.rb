@@ -18,6 +18,10 @@ module RecordingStudioBroadcasts
       "#{state[:label]} · #{I18n.l(state[:time].in_time_zone, format: :long)}"
     end
 
+    def self.schedule_label(broadcast)
+      broadcast.sent_at.present? ? "Sent at" : "Sends at"
+    end
+
     def self.schedule_state(_recording, broadcast)
       if broadcast.sent_at.present?
         { label: "Sent", style: :success, time: broadcast.sent_at }
@@ -29,6 +33,10 @@ module RecordingStudioBroadcasts
 
     def broadcast_schedule_state(recording, broadcast)
       BroadcastsHelper.schedule_state(recording, broadcast)
+    end
+
+    def schedule_label(broadcast)
+      BroadcastsHelper.schedule_label(broadcast)
     end
 
     def broadcast_publishable_return_notice(recording)
