@@ -5,6 +5,8 @@ require "test_helper"
 class BroadcastCampaignTest < ActiveSupport::TestCase
   Campaign = RecordingStudioBroadcasts::Campaign
 
+  setup { Current.actor = create_user("campaign-writer@example.com") }
+
   test "a new broadcast is a draft child of the admin root" do
     recording = create_broadcast
 
@@ -49,5 +51,23 @@ class BroadcastCampaignTest < ActiveSupport::TestCase
       Campaign.revise!(recording, actor: nil, status: "draft")
     end
     assert_equal "cancelled", broadcast_status(recording)
+  end
+
+  test "delete removes every snapshot, including ones past the first recordables page" do
+    previous = RecordingStudio.configuration.authorize_write
+    RecordingStudio.configuration.authorize_write = ->(**) { true }
+    actor = create_user("snapshot-editor@example.com")
+    recording = create_broadcast(actor: actor)
+    50.times { |index| Campaign.update(recording, actor: actor, subject: "Revision #{index}") }
+
+    snapshot_ids = recording.recordables(all: true).map(&:id)
+    assert_operator snapshot_ids.size, :>, 50
+
+    Campaign.destroy(recording, actor: actor)
+
+    assert_not RecordingStudio::Recording.exists?(recording.id)
+    assert_empty RecordingStudioBroadcasts::Broadcast.where(id: snapshot_ids)
+  ensure
+    RecordingStudio.configuration.authorize_write = previous
   end
 end

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.2]
+
+### Changed
+
+- Deleting a broadcast loads every snapshot with `recordables(all: true)`. Recording Studio 6.12.0 returns 50 by default and pages with `limit:` and `cursor:`. A draft with more than 50 revisions would otherwise leave the older snapshots in `recording_studio_broadcasts`.
+- Development and dummy pins, and the dependency floor, are Recording Studio `v6.12.0`.
+
+### Upgrade notes
+
+- Hosts must pin Recording Studio `v6.12.0` or newer. Delete calls `recordables(all: true)`, which that release added.
+- Run `bin/rails generate recording_studio:migrations`, then migrate. That installs `root_recording_id` on `recording_studio_events`.
+- Set `config.authorize_write` so a present actor may write. Core 6.12 rejects a write when that callback is missing.
+
 ## [0.3.1]
 
 ### Changed

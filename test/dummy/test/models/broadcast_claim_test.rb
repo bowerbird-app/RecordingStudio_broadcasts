@@ -10,6 +10,7 @@ class BroadcastClaimTest < ActiveSupport::TestCase
     RecordingStudioBroadcasts.configuration.batch_size = 2
     sender = create_user("sender@example.com")
     grant_sender!(sender)
+    Current.actor = sender
     2.times { |index| create_user("claim#{index}@example.com") }
     @recording = create_broadcast
     RecordingStudioBroadcasts.launch(@recording, actor: sender)

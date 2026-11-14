@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioBroadcastsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.3.1", ::RecordingStudioBroadcasts::VERSION
+    assert_equal "0.3.2", ::RecordingStudioBroadcasts::VERSION
   end
 
   def test_engine_exists
@@ -14,7 +14,7 @@ class RecordingStudioBroadcastsTest < Minitest::Test
   def test_gemspec_pins_sibling_gems
     gemspec = File.read(File.expand_path("../recording_studio_broadcasts.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.3.0", "< 7"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.12.0", "< 7"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.18"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_admin", ">= 2.9.1", "< 3"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications", ">= 0.14.8", "< 0.15"'
@@ -68,7 +68,7 @@ class RecordingStudioBroadcastsTest < Minitest::Test
 
   def test_both_gemfiles_pin_verified_github_tags
     pins = {
-      "RecordingStudio" => "v6.3.0",
+      "RecordingStudio" => "v6.12.0",
       "RecordingStudio_accessible" => "v0.24.1",
       "RecordingStudio_attachable" => "v0.22.0",
       "RecordingStudio_publishable" => "v0.13.0",

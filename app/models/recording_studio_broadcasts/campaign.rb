@@ -50,7 +50,7 @@ module RecordingStudioBroadcasts
         status = recording.recordable.status
         raise InvalidTransition, "A #{status} broadcast cannot be deleted" unless actions_for(status).include?(:delete)
 
-        snapshot_ids = recording.recordables.map(&:id)
+        snapshot_ids = recording.recordables(all: true).map(&:id)
         parent = recording.parent_recording
         parent.log_event(parent, action: "deleted", actor:, metadata: { broadcast_recording_id: recording.id })
         recording.destroy!
