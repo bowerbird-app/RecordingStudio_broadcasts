@@ -176,8 +176,8 @@ class SentBroadcastLockTest < ActionDispatch::IntegrationTest
   end
 
   test "admin update and delete are hidden and refused once sent" do
-    sent = start_sending
-    perform_enqueued_jobs
+    sent = nil
+    perform_enqueued_jobs { sent = start_sending }
     sent.reload
     update = RecordingStudioBroadcasts::BroadcastsResource.action_for(:update)
     delete = RecordingStudioBroadcasts::BroadcastsResource.action_for(:delete)
