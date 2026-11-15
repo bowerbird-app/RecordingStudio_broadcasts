@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0]
+
+### Changed
+
+- Requires Recording Studio 7 (`>= 7.0`, `< 8.0`). Sibling floors are open below the next major: Accessible `>= 0.44.0`, Admin `>= 2.16.0` (`< 3.0`), Attachable `>= 0.28.0`, Notifications `>= 0.18.0`, Notifications Email `>= 0.5.4`, and Publishable `>= 0.18.1`. FlatPack is `>= 0.1.376`, `< 0.2`.
+- Development and dummy pins are Recording Studio `v7.0.0`, those floors, and the GitHub gems Bundler needs with them: API `v0.24.0`, Moveable `v5.0.0`, Trashable `v0.17.0`, Metrics `v0.9.0`, Cache `v0.6.3`, Icons `v0.2.1`, Logs `v0.8.0`, Root Switchable `v0.16.0`, and FlatPack `v0.1.376`. Puma is `8.1.0`. msgpack stays `>= 1.8.7`.
+- Creating a root uses `RecordingStudio.create_root_recording!(recordable, actor:)`. `root_recording_for` only finds an existing root.
+- Kept rows use `RecordingStudio::Recording.kept`. The dummy admin config sets `access_recording_resolver` only.
+
+### Upgrade notes
+
+- Pin Recording Studio `v7.0.0` or newer, below 8. Run `bin/rails generate recording_studio:migrations` so `recording_studio_events.root_recording_id` exists. `config.authorize_write` still runs when a root is created, and `root_recording` is nil on that call.
+- Calls that created a root by using `root_recording_for` now call `create_root_recording!`. Lookups stay on `root_recording_for` and can return nil.
+- Replace `recording_studio_trashable_kept_sql` with `Recording.kept`. Remove `site_admin_recording_resolver`.
+- `RecordingStudioNotifications.notify` and `notify_fan_out` take the same arguments Broadcasts already passes. No Broadcasts migration.
+- Root Switchable 0.16 refuses the switcher unless the actor has Accessible view on the current root.
+
 ## [0.4.0]
 
 ### Changed

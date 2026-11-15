@@ -7,7 +7,11 @@ require "rails/test_help"
 
 module BroadcastTestHelpers
   def admin_root_recording
-    @admin_root_recording ||= RecordingStudio.root_recording_for(AdminRoot.create!(name: "Admin"))
+    @admin_root_recording ||= RecordingStudio.create_root_recording!(
+      AdminRoot.create!(name: "Admin"),
+      actor: Current.actor || User.order(:created_at, :id).first ||
+        create_user("root-writer-#{SecureRandom.hex(4)}@example.com")
+    )
   end
 
   def create_user(email, created_at: Time.current)

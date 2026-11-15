@@ -256,8 +256,9 @@ class SentBroadcastLockTest < ActionDispatch::IntegrationTest
   end
 
   def api_context(recording, params)
-    Struct.new(:recording, :api_client, :params, keyword_init: true).new(
-      recording: recording, api_client: @admin, params: params
+    access_grant = Struct.new(:actor, keyword_init: true).new(actor: @admin)
+    Struct.new(:recording, :api_client, :params, :access_grant, keyword_init: true).new(
+      recording: recording, api_client: @admin, params: params, access_grant: access_grant
     )
   end
 
