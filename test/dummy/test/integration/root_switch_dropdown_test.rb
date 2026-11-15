@@ -27,7 +27,8 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
     sign_in user
 
     workspace = Workspace.create!(name: "Switch Page Workspace")
-    RecordingStudio.root_recording_for(workspace)
+    RecordingStudio.create_root_recording!(workspace, actor: user)
+    grant_switcher_access!(user)
 
     get "/recording_studio_root_switchable/v1/root_switch?scope=all_workspaces"
 
@@ -46,8 +47,9 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
 
     source_workspace = Workspace.create!(name: "Source Workspace")
     target_workspace = Workspace.create!(name: "Target Workspace")
-    target_root_recording = RecordingStudio.root_recording_for(target_workspace)
-    RecordingStudio.root_recording_for(source_workspace)
+    target_root_recording = RecordingStudio.create_root_recording!(target_workspace, actor: user)
+    RecordingStudio.create_root_recording!(source_workspace, actor: user)
+    grant_switcher_access!(user)
 
     patch "/recording_studio_root_switchable/v1/root_switch", params: {
       scope: "all_workspaces",
@@ -70,8 +72,9 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
 
     source_workspace = Workspace.create!(name: "Fallback Source Workspace")
     target_workspace = Workspace.create!(name: "Fallback Target Workspace")
-    target_root_recording = RecordingStudio.root_recording_for(target_workspace)
-    RecordingStudio.root_recording_for(source_workspace)
+    target_root_recording = RecordingStudio.create_root_recording!(target_workspace, actor: user)
+    RecordingStudio.create_root_recording!(source_workspace, actor: user)
+    grant_switcher_access!(user)
 
     patch "/recording_studio_root_switchable/v1/root_switch", params: {
       scope: "all_workspaces",
@@ -82,5 +85,23 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
     }
 
     assert_redirected_to "/"
+  end
+
+  private
+
+  def grant_switcher_access!(actor)
+    Workspace.order(:name).each do |workspace|
+      root = RecordingStudio.root_recording_for(workspace)
+      next unless root
+      next if RecordingStudioAccessible.authorized?(actor: actor, recording: root, role: :view)
+
+      result = RecordingStudioAccessible.bootstrap_owner_access!(recording: root, actor: actor)
+      next if result.success?
+
+      granted = RecordingStudioAccessible.grant_access(
+        recording: root, actor: actor, role: "view", manager_actor: actor
+      )
+      raise "could not grant switcher access: #{granted.error.inspect}" unless granted.success?
+    end
   end
 end

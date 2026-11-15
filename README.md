@@ -6,18 +6,20 @@ Each broadcast is a Recording under the admin root, so edits and status changes 
 
 ## Install
 
-These gems are not on RubyGems. Pin them from GitHub in the host `Gemfile`:
+These gems are not on RubyGems. Broadcasts 0.5.0 needs Recording Studio 7. Pin them from GitHub in the host `Gemfile`:
 
 ```ruby
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.12.0"
-gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.1"
-gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.9.1"
-gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.16.0"
-gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.5.2"
-gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.22.0"
-gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v0.13.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.0.0"
+gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.44.0"
+gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.16.0"
+gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.18.0"
+gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.5.4"
+gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.28.0"
+gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v0.18.1"
 gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.2.1"
 ```
+
+Create roots with `RecordingStudio.create_root_recording!(recordable, actor:)`. `root_recording_for` only finds one. The events table needs `root_recording_id` (`bin/rails generate recording_studio:migrations`). Admin 2.16 uses `access_recording_resolver`. Kept recordings are `Recording.kept`.
 
 Install Admin, Notifications, the email channel, and Publishable first, following their READMEs. Publishable's recordable includes Attachable, so install that gem too. Then:
 
