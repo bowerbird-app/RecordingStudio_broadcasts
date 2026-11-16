@@ -19,7 +19,7 @@ gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics",
 gem "recording_studio_moveable", github: "bowerbird-app/RecordingStudio_moveable", tag: "v5.0.0", require: false
 gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.18.0"
 gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.5.4"
-gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v0.18.1"
+gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v1.0.0"
 gem "recording_studio_root_switchable", github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.16.0"
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.17.0"
 

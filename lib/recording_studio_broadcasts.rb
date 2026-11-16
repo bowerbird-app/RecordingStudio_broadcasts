@@ -15,6 +15,12 @@ require "recording_studio_broadcasts/engine"
 
 module RecordingStudioBroadcasts
   NOTIFICATION_TYPE = :product_update
+  AFTER_SERVICE_LATCH = :recording_studio_broadcasts_publishable_after_service
+  LIFECYCLE_LISTENERS = {
+    published: ->(event) { Campaign.deliver_published(event.payload) },
+    unpublished: ->(event) { Campaign.withdraw_after_publishable_change(event.payload) },
+    revised: ->(event) { Campaign.withdraw_after_publishable_change(event.payload) }
+  }.freeze
 
   class Error < StandardError; end
   class InvalidTransition < Error; end
@@ -66,26 +72,50 @@ module RecordingStudioBroadcasts
       Delivery.test_send(recording, actor:)
     end
 
-    def subscribe_publishable_writes!
-      RecordingStudioPublishable.subscribe(:published) { |event| Campaign.deliver_published(event.payload) }
-      # Update runs this in-process, so a future send time is caught before any window job.
-      RecordingStudioPublishable.configuration.hooks.after_service do |service_class, result|
-        Campaign.note_external_publishable_write(service_class, result)
-      end
-      # A future schedule is not live, so these do not fire for that edit.
-      %i[unpublished revised].each do |name|
-        RecordingStudioPublishable.subscribe(name) do |event|
-          Campaign.withdraw_after_publishable_change(event.payload)
-        end
-      end
+    def install_publish_delivery!
+      install_lifecycle_listeners!
+      install_publishable_after_service!
       SentPublishableLock.install!
     end
 
-    def install_publish_delivery!
-      return if @publish_delivery_installed
+    private
 
-      @publish_delivery_installed = true
-      subscribe_publishable_writes!
+    def install_lifecycle_listeners!
+      LIFECYCLE_LISTENERS.each_key { |name| install_lifecycle_listener(name) }
+    end
+
+    def install_lifecycle_listener(name)
+      event_name = RecordingStudioPublishable::LifecycleNotifications.event_name_for(name)
+      current = lifecycle_subscriptions[name]
+      return if lifecycle_listener_active?(event_name, current)
+
+      lifecycle_subscriptions[name] = RecordingStudioPublishable.subscribe(name) do |event|
+        LIFECYCLE_LISTENERS.fetch(name).call(event)
+      end
+    end
+
+    def lifecycle_listener_active?(event_name, subscription)
+      subscription && ActiveSupport::Notifications.notifier.listeners_for(event_name).include?(subscription)
+    end
+
+    def lifecycle_subscriptions
+      @lifecycle_subscriptions ||= {}
+    end
+
+    def install_publishable_after_service!
+      hooks = RecordingStudio.configuration.hooks
+      return if hooks.registered?(AFTER_SERVICE_LATCH)
+
+      hooks.after_service { |service_class, result| note_publishable_write(service_class, result) }
+      hooks.on(AFTER_SERVICE_LATCH) { true }
+    end
+
+    # Update runs in-process, so a future send time is caught before any window job.
+    # Transition calls Update, which runs this hook itself.
+    def note_publishable_write(service_class, result)
+      return unless SentPublishableLock.locked_service?(service_class)
+
+      Campaign.note_external_publishable_write(service_class, result)
     end
   end
 end

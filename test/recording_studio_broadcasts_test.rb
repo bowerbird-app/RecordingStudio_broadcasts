@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioBroadcastsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.5.0", ::RecordingStudioBroadcasts::VERSION
+    assert_equal "0.6.0", ::RecordingStudioBroadcasts::VERSION
   end
 
   def test_engine_exists
@@ -19,7 +19,8 @@ class RecordingStudioBroadcastsTest < Minitest::Test
     assert_includes gemspec, 'spec.add_dependency "recording_studio_admin", ">= 2.16.0", "< 3.0"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications", ">= 0.18.0", "< 1.0"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_notifications_email", ">= 0.5.4", "< 1.0"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_publishable", ">= 0.18.1", "< 1.0"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_publishable", ">= 1.0.0"'
+    refute_includes gemspec, 'recording_studio_publishable", ">= 1.0.0", "<'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_attachable", ">= 0.28.0", "< 1.0"'
     assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.376", "< 0.2"'
   end
@@ -56,8 +57,9 @@ class RecordingStudioBroadcastsTest < Minitest::Test
   def test_readme_install_pin_matches_shipped_broadcasts_tag
     readme = File.read(File.expand_path("../README.md", __dir__))
 
-    assert_includes readme, 'tag: "v0.2.1"'
-    refute_includes readme, 'RecordingStudio_broadcasts", tag: "v0.2.0"'
+    assert_includes readme, 'tag: "v0.6.0"'
+    assert_includes readme, 'RecordingStudio_publishable", tag: "v1.0.0"'
+    refute_includes readme, 'RecordingStudio_broadcasts", tag: "v0.5.0"'
   end
 
   def test_cursor_install_still_fetches_skills
@@ -80,7 +82,7 @@ class RecordingStudioBroadcastsTest < Minitest::Test
       "RecordingStudio_moveable" => "v5.0.0",
       "RecordingStudio_notifications" => "v0.18.0",
       "RecordingStudio_notifications_email" => "v0.5.4",
-      "RecordingStudio_publishable" => "v0.18.1",
+      "RecordingStudio_publishable" => "v1.0.0",
       "RecordingStudio_root_switchable" => "v0.16.0",
       "RecordingStudio_trashable" => "v0.17.0",
       "flatpack" => "v0.1.376"
