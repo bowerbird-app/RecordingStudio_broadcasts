@@ -16,8 +16,8 @@ module RecordingStudioBroadcasts
       return_to_draft!(recording, actor_from(payload))
     end
 
-    # Publishable's after_service hook runs in-process on every Update, including
-    # a future publish_at edit that never becomes a lifecycle event.
+    # Core after_service runs in-process on every service. The listener only acts on
+    # Publishable Update, including a future publish_at edit that never becomes a lifecycle event.
     def note_external_publishable_write(service_class, result)
       return unless external_publishable_update?(service_class, result)
 

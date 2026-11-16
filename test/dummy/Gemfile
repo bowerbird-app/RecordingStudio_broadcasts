@@ -7,7 +7,7 @@ gem "recording_studio_broadcasts", path: "../.."
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.0.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.44.0"
 gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.28.0"
-gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v0.18.1"
+gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v1.0.0"
 # Accessible and Admin use Trashable's kept filter (GitHub-only; not on RubyGems)
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.17.0", require: false
 

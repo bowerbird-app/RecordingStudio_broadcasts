@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0]
+
+### Changed
+
+- Requires Publishable `>= 1.0.0`. This is a breaking change. Publishable 1.0.0 removed `RecordingStudioPublishable::Hooks` and `RecordingStudioPublishable.configuration.hooks`.
+- The sent-broadcast lock and the external-write listener register on `RecordingStudio.configuration.hooks`. The lock is an `around_service` hook at priority 0, so it wraps hooks at the default priority of 100. It refuses Publishable Update and Transition on a sent broadcast and calls the next hook for every other service. The `after_service` listener returns immediately unless the service is one of those two.
+- `install_publish_delivery!` can run again after `RecordingStudio.configuration.hooks.clear!` or a failed boot. A repeat call does not subscribe twice, so one published event still sends once.
+- `RecordingStudioPublishable.subscribe` for `:published`, `:unpublished`, and `:revised` is unchanged. `register_public_renderer` is unchanged.
+- Development and dummy pins use Publishable `v1.0.0`. Recording Studio stays `v7.0.0` (`>= 7.0`, `< 8.0`).
+
+### Upgrade notes
+
+- Pin `recording_studio_publishable` to tag `v1.0.0` or newer and remove a `< 1.0` cap. Recording Studio stays `>= 7.0`, `< 8.0`. No Broadcasts migration.
+- Delete host code that calls `RecordingStudioPublishable.configuration.hooks` or `RecordingStudioPublishable::Hooks`. Register service hooks on `RecordingStudio.configuration.hooks` and filter by service class. Core runs those hooks for every gem.
+- Leave `RecordingStudioPublishable.subscribe(:published)`, `:unpublished`, and `:revised` in place.
+
 ## [0.5.0]
 
 ### Changed

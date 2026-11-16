@@ -135,10 +135,10 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_publishable.git
-  revision: 19a6b92de4727489a7d76ebdc42a89584e11d264
-  tag: v0.18.1
+  revision: f8753d33ba17b762cc1728023cae4d48ea1820df
+  tag: v1.0.0
   specs:
-    recording_studio_publishable (0.18.1)
+    recording_studio_publishable (1.0.0)
       flat_pack (>= 0.1.341)
       rails (~> 8.1.0)
       recording_studio (>= 7.0, < 8.0)
@@ -184,7 +184,7 @@ GIT
 PATH
   remote: ../..
   specs:
-    recording_studio_broadcasts (0.5.0)
+    recording_studio_broadcasts (0.6.0)
       flat_pack (>= 0.1.376, < 0.2)
       rails (~> 8.1.0)
       recording_studio (>= 7.0, < 8.0)
@@ -193,7 +193,7 @@ PATH
       recording_studio_attachable (>= 0.28.0, < 1.0)
       recording_studio_notifications (>= 0.18.0, < 1.0)
       recording_studio_notifications_email (>= 0.5.4, < 1.0)
-      recording_studio_publishable (>= 0.18.1, < 1.0)
+      recording_studio_publishable (>= 1.0.0)
 
 GEM
   remote: https://rubygems.org/
@@ -764,7 +764,7 @@ CHECKSUMS
   recording_studio_admin (2.16.0)
   recording_studio_api (0.24.0)
   recording_studio_attachable (0.28.0)
-  recording_studio_broadcasts (0.5.0)
+  recording_studio_broadcasts (0.6.0)
   recording_studio_cache (0.6.3)
   recording_studio_icons (0.2.1)
   recording_studio_logs (0.8.0)
@@ -772,7 +772,7 @@ CHECKSUMS
   recording_studio_moveable (5.0.0)
   recording_studio_notifications (0.18.0)
   recording_studio_notifications_email (0.5.4)
-  recording_studio_publishable (0.18.1)
+  recording_studio_publishable (1.0.0)
   recording_studio_root_switchable (0.16.0)
   recording_studio_trashable (0.17.0)
   redis (5.4.1) sha256=b5e675b57ad22b15c9bcc765d5ac26f60b675408af916d31527af9bd5a81faae

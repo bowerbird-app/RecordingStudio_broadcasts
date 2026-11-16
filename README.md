@@ -6,7 +6,7 @@ Each broadcast is a Recording under the admin root, so edits and status changes 
 
 ## Install
 
-These gems are not on RubyGems. Broadcasts 0.5.0 needs Recording Studio 7. Pin them from GitHub in the host `Gemfile`:
+These gems are not on RubyGems. Broadcasts 0.6.0 needs Recording Studio 7 and Publishable 1.0.0. Pin them from GitHub in the host `Gemfile`:
 
 ```ruby
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.0.0"
@@ -15,8 +15,8 @@ gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag
 gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.18.0"
 gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.5.4"
 gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.28.0"
-gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v0.18.1"
-gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.2.1"
+gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v1.0.0"
+gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.6.0"
 ```
 
 Create roots with `RecordingStudio.create_root_recording!(recordable, actor:)`. `root_recording_for` only finds one. The events table needs `root_recording_id` (`bin/rails generate recording_studio:migrations`). Admin 2.16 uses `access_recording_resolver`. Kept recordings are `Recording.kept`.
@@ -83,7 +83,7 @@ Each filter gets the current scope and the admin's value and returns a narrower 
 
 The Broadcasts screen lists every broadcast. The detail page shows who gets it (Matching, Ready, Left out), the filters, and how sending is going. View access can open both. Sending, scheduling, cancelling, editing, test sends, and deleting need admin access. Only a draft can be deleted. A sent or cancelled broadcast stays as a record.
 
-Once `sent_at` is set, the broadcast is locked. Opening edit redirects to the broadcasts list with an alert. Edit and Delete on the admin resource are hidden and refused. Publishable cannot update that broadcast or run publish, schedule, unpublish, or draft, including SEO and social fields. That refusal is the same for Publishable's pages, its JSON responses, and its API. Cancel and completing a send still work: those writes are marked as Broadcasts' own Publishable write for that recording. A draft or a scheduled broadcast can still be edited. Direct `update!` or `update_columns`, revising the publishable child, and trash bypass this lock.
+Once `sent_at` is set, the broadcast is locked. Opening edit redirects to the broadcasts list with an alert. Edit and Delete on the admin resource are hidden and refused. Publishable cannot update that broadcast or run publish, schedule, unpublish, or draft, including SEO and social fields. That refusal is a Recording Studio `around_service` hook on Publishable's Update and Transition services. Publishable's pages, JSON responses, and API return the same refusal. Other services are left alone. Cancel and completing a send still work: those writes are marked as Broadcasts' own Publishable write for that recording. A draft or a scheduled broadcast can still be edited. Direct `update!` or `update_columns`, revising the publishable child, and trash bypass this lock.
 
 Each admin gets one test email per broadcast. The test uses a fixed idempotency key, so asking again sends nothing and the page says so.
 
