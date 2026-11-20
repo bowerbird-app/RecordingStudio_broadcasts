@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioBroadcastsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.6.0", ::RecordingStudioBroadcasts::VERSION
+    assert_equal "0.7.0", ::RecordingStudioBroadcasts::VERSION
   end
 
   def test_engine_exists
@@ -22,7 +22,17 @@ class RecordingStudioBroadcastsTest < Minitest::Test
     assert_includes gemspec, 'spec.add_dependency "recording_studio_publishable", ">= 1.0.0"'
     refute_includes gemspec, 'recording_studio_publishable", ">= 1.0.0", "<'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_attachable", ">= 0.28.0", "< 1.0"'
-    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.376", "< 0.2"'
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.376", "< 1.0"'
+  end
+
+  def test_gemspec_allows_flat_pack_0_2_0
+    spec = Gem::Specification.load(File.expand_path("../recording_studio_broadcasts.gemspec", __dir__))
+    requirement = spec.dependencies.find { |dependency| dependency.name == "flat_pack" }.requirement
+
+    assert_equal Gem::Requirement.new(">= 0.1.376", "< 1.0"), requirement
+    assert requirement.satisfied_by?(Gem::Version.new("0.1.376"))
+    assert requirement.satisfied_by?(Gem::Version.new("0.2.0"))
+    refute requirement.satisfied_by?(Gem::Version.new("1.0.0"))
   end
 
   def test_gemspec_excludes_cursor_config
@@ -57,8 +67,13 @@ class RecordingStudioBroadcastsTest < Minitest::Test
   def test_readme_install_pin_matches_shipped_broadcasts_tag
     readme = File.read(File.expand_path("../README.md", __dir__))
 
-    assert_includes readme, 'tag: "v0.6.0"'
-    assert_includes readme, 'RecordingStudio_publishable", tag: "v1.0.0"'
+    assert_includes readme, github_gem_pin(
+      "recording_studio_broadcasts", "~> 0.7", "RecordingStudio_broadcasts", "v0.7.0"
+    )
+    assert_includes readme, github_gem_pin(
+      "recording_studio_publishable", "~> 1.5", "RecordingStudio_publishable", "v1.5.0"
+    )
+    refute_includes readme, 'RecordingStudio_broadcasts", tag: "v0.6.0"'
     refute_includes readme, 'RecordingStudio_broadcasts", tag: "v0.5.0"'
   end
 
@@ -69,31 +84,61 @@ class RecordingStudioBroadcastsTest < Minitest::Test
   end
 
   def test_both_gemfiles_pin_verified_github_tags
-    pins = {
-      "RecordingStudio" => "v7.0.0",
-      "RecordingStudio_accessible" => "v0.44.0",
-      "RecordingStudio_admin" => "v2.16.0",
-      "RecordingStudio_api" => "v0.24.0",
-      "RecordingStudio_attachable" => "v0.28.0",
-      "RecordingStudio_cache" => "v0.6.3",
-      "RecordingStudio_icons" => "v0.2.1",
-      "RecordingStudio_logs" => "v0.8.0",
-      "RecordingStudio_metrics" => "v0.9.0",
-      "RecordingStudio_moveable" => "v5.0.0",
-      "RecordingStudio_notifications" => "v0.18.0",
-      "RecordingStudio_notifications_email" => "v0.5.4",
-      "RecordingStudio_publishable" => "v1.0.0",
-      "RecordingStudio_root_switchable" => "v0.16.0",
-      "RecordingStudio_trashable" => "v0.17.0",
-      "flatpack" => "v0.1.376"
-    }
+    shared = [
+      github_gem_pin("flat_pack", "~> 0.2", "flatpack", "v0.2.0"),
+      github_gem_pin("recording_studio", "~> 7.8", "RecordingStudio", "v7.8.0"),
+      github_gem_pin("recording_studio_accessible", "~> 0.58", "RecordingStudio_accessible", "v0.58.0"),
+      github_gem_pin("recording_studio_admin", "~> 2.20", "RecordingStudio_admin", "v2.20.0"),
+      github_gem_pin("recording_studio_api", "~> 1.21", "RecordingStudio_api", "v1.21.2", require_gem: false),
+      github_gem_pin("recording_studio_attachable", "~> 0.34", "RecordingStudio_attachable", "v0.34.0"),
+      github_gem_pin("recording_studio_cache", "~> 0.8", "RecordingStudio_cache", "v0.8.0"),
+      github_gem_pin("recording_studio_icons", "~> 0.5", "RecordingStudio_icons", "v0.5.0", require_gem: false),
+      github_gem_pin("recording_studio_logs", "~> 0.9", "RecordingStudio_logs", "v0.9.0"),
+      github_gem_pin("recording_studio_metrics", "~> 0.10", "RecordingStudio_metrics", "v0.10.0"),
+      github_gem_pin("recording_studio_notifications", "~> 0.21", "RecordingStudio_notifications", "v0.21.0"),
+      github_gem_pin("recording_studio_publishable", "~> 1.5", "RecordingStudio_publishable", "v1.5.0")
+    ]
+    root = File.read(File.expand_path("../Gemfile", __dir__))
+    dummy = File.read(File.expand_path("dummy/Gemfile", __dir__))
 
-    [File.expand_path("../Gemfile", __dir__), File.expand_path("dummy/Gemfile", __dir__)].each do |path|
-      gemfile = File.read(path)
-      pins.each do |repo, tag|
-        assert_includes gemfile, %(github: "bowerbird-app/#{repo}", tag: "#{tag}"), "#{path} pins #{repo}"
-      end
+    shared.each do |line|
+      assert_includes root, line
+      assert_includes dummy, line
     end
+
+    assert_includes root, <<~PIN
+      gem "recording_studio_moveable", "~> 6.1",
+          github: "bowerbird-app/RecordingStudio_moveable", tag: "v6.1.0", require: false
+    PIN
+    assert_includes root, <<~PIN
+      gem "recording_studio_notifications_email", "~> 0.7",
+          github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.7.0"
+    PIN
+    assert_includes root, <<~PIN
+      gem "recording_studio_root_switchable", "~> 0.17",
+          github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.17.0"
+    PIN
+    trashable = github_gem_pin("recording_studio_trashable", "~> 1.3", "RecordingStudio_trashable", "v1.3.0")
+    assert_includes root, trashable
+    refute_includes root, "#{trashable}, require: false"
+
+    assert_includes dummy, github_gem_pin(
+      "recording_studio_moveable", "~> 6.1", "RecordingStudio_moveable", "v6.1.0", require_gem: false
+    )
+    assert_includes dummy, github_gem_pin(
+      "recording_studio_notifications_email", "~> 0.7", "RecordingStudio_notifications_email", "v0.7.0"
+    )
+    assert_includes dummy, github_gem_pin(
+      "recording_studio_root_switchable", "~> 0.17", "RecordingStudio_root_switchable", "v0.17.0"
+    )
+    assert_includes dummy, github_gem_pin(
+      "recording_studio_trashable", "~> 1.3", "RecordingStudio_trashable", "v1.3.0", require_gem: false
+    )
+  end
+
+  def github_gem_pin(name, requirement, repo, tag, require_gem: true)
+    pin = %(gem "#{name}", "#{requirement}", github: "bowerbird-app/#{repo}", tag: "#{tag}")
+    require_gem ? pin : "#{pin}, require: false"
   end
 
   def test_dummy_schema_includes_accessible_depends_on_recording_id
