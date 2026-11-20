@@ -6,17 +6,17 @@ Each broadcast is a Recording under the admin root, so edits and status changes 
 
 ## Install
 
-These gems are not on RubyGems. Broadcasts 0.6.0 needs Recording Studio 7 and Publishable 1.0.0. Pin them from GitHub in the host `Gemfile`:
+These gems are not on RubyGems. Broadcasts 0.7.0 needs Recording Studio 7.8 and Publishable 1.5.0. Pin them from GitHub in the host `Gemfile`:
 
 ```ruby
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.0.0"
-gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.44.0"
-gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.16.0"
-gem "recording_studio_notifications", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.18.0"
-gem "recording_studio_notifications_email", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.5.4"
-gem "recording_studio_attachable", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.28.0"
-gem "recording_studio_publishable", github: "bowerbird-app/RecordingStudio_publishable", tag: "v1.0.0"
-gem "recording_studio_broadcasts", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.6.0"
+gem "recording_studio", "~> 7.8", github: "bowerbird-app/RecordingStudio", tag: "v7.8.0"
+gem "recording_studio_accessible", "~> 0.58", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.58.0"
+gem "recording_studio_admin", "~> 2.20", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.20.0"
+gem "recording_studio_notifications", "~> 0.21", github: "bowerbird-app/RecordingStudio_notifications", tag: "v0.21.0"
+gem "recording_studio_notifications_email", "~> 0.7", github: "bowerbird-app/RecordingStudio_notifications_email", tag: "v0.7.0"
+gem "recording_studio_attachable", "~> 0.34", github: "bowerbird-app/RecordingStudio_attachable", tag: "v0.34.0"
+gem "recording_studio_publishable", "~> 1.5", github: "bowerbird-app/RecordingStudio_publishable", tag: "v1.5.0"
+gem "recording_studio_broadcasts", "~> 0.7", github: "bowerbird-app/RecordingStudio_broadcasts", tag: "v0.7.0"
 ```
 
 Create roots with `RecordingStudio.create_root_recording!(recordable, actor:)`. `root_recording_for` only finds one. The events table needs `root_recording_id` (`bin/rails generate recording_studio:migrations`). Admin 2.16 uses `access_recording_resolver`. Kept recordings are `Recording.kept`.

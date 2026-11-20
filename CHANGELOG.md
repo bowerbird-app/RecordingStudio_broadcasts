@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.7.0]
+
+### Changed
+
+- The gemspec cap on FlatPack is `< 1.0`. The floor stays `>= 0.1.376`, so a host on FlatPack 0.1.x still resolves and FlatPack 0.2 resolves.
+- Development and dummy pins are FlatPack `~> 0.2` (`v0.2.0`), Recording Studio `~> 7.8` (`v7.8.0`), Accessible `~> 0.58` (`v0.58.0`), Admin `~> 2.20` (`v2.20.0`), Attachable `~> 0.34` (`v0.34.0`), Notifications `~> 0.21` (`v0.21.0`), Notifications Email `~> 0.7` (`v0.7.0`), Publishable `~> 1.5` (`v1.5.0`), Root Switchable `~> 0.17` (`v0.17.0`), Trashable `~> 1.3` (`v1.3.0`), Cache `~> 0.8` (`v0.8.0`), Icons `~> 0.5` (`v0.5.0`), Logs `~> 0.9` (`v0.9.0`), Metrics `~> 0.10` (`v0.10.0`), Moveable `~> 6.1` (`v6.1.0`), and API `~> 1.21` (`v1.21.2`).
+- Other gemspec ranges are unchanged: Rails `~> 8.1.0`, Recording Studio `>= 7.0`, `< 8.0`, Accessible `>= 0.44.0`, `< 1.0`, Admin `>= 2.16.0`, `< 3.0`, Attachable `>= 0.28.0`, `< 1.0`, Notifications `>= 0.18.0`, `< 1.0`, Notifications Email `>= 0.5.4`, `< 1.0`, and Publishable `>= 1.0.0`.
+
+### Upgrade notes
+
+- Hosts MUST run the Recording Studio 7.4, 7.5 and 7.7 migrations if they have not. This gem does not ship those core migrations.
+- flat_pack 0.2.0 is supported; hosts moving to 0.2 must remove the manual `flat_pack/heroicons` importmap pin and any `flat-pack--icon` controller registration.
+- Notifications 0.21.0 adds `20261119120000_add_inbound_replies_to_recording_studio_notifications`. API 1.21.2 adds `20261117000024_add_owner_to_recording_studio_api_api_clients` on an existing API clients table. No Broadcasts migration.
+- Compare [v0.6.0...v0.7.0](https://github.com/bowerbird-app/RecordingStudio_broadcasts/compare/v0.6.0...v0.7.0).
+
 ## [0.6.0]
 
 ### Changed
@@ -128,3 +145,6 @@
 - Host-registered audience filters combined with AND, plus `preview` counts for matching, eligible, and excluded people.
 - `launch`, `schedule`, `cancel`, and `test_send` commands. Sending snapshots the audience into `recording_studio_broadcast_recipients` and delivers in batches through `recording_studio_notifications` email. Unsubscribe links and `List-Unsubscribe` headers come from `recording_studio_notifications_email` 0.3.15.
 - Install generator for the initializer and the admin section key, and a migrations generator.
+
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_broadcasts/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/bowerbird-app/RecordingStudio_broadcasts/compare/v0.6.0...v0.7.0
